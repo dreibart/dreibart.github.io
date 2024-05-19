@@ -278,6 +278,8 @@
 			targetFrameModification.modifier
 	);
 
+	let authenticationRequired = $state(false);
+
 	type targetFrameModificationData = {
 		name: string;
 		modifier: number;
@@ -297,21 +299,57 @@
 				skillResult: number;
 		  } = $state();
 
-	let characterId: undefined | number = $state();
+	let character: undefined | CharactrData = $state();
 	let loading = $state(false);
 	onMount(async () => {
 		loading = true;
 		try {
 			const charString = $page.url.searchParams.get('character-id');
 			if (charString) {
-				characterId = parseInt(charString);
+				const characterId = parseInt(charString);
+				const char = await characterData(characterId);
+				if (char.typ == 'error') {
+					if (char.description == 'Authentication needed') {
+						authenticationRequired = true;
+					}
+				} else {
+					character = char;
+				}
 			}
-		} catch (error) {}
+		} catch (error) {
+			console.error(error);
+		}
 		loading = false;
 	});
 
-	function roll() {
-		let skill = 14;
+	async function characterData(
+		charactieId: number
+	): Promise<CharactrData | { typ: 'error'; description: 'Authentication needed' }> {
+		const result = await fetch(
+			`https://dreibart.de/rpgdb/requestHelper.php?character=${charactieId}`,
+			{
+				credentials: 'include'
+			}
+		);
+		if (result.status == 401) {
+			return { typ: 'error', description: 'Authentication needed' };
+		} else {
+			return await result.json();
+		}
+	}
+
+	type CharactrData = {
+		name: number;
+		typ: 'character';
+		'nomaler Schuss': number;
+		'gezielter Schuss': number;
+	};
+
+	function roll(type: 'nomaler Schuss' | 'gezielter Schuss') {
+		if (character == undefined) {
+			return false;
+		}
+		let skill = character[type];
 		const role1 = Math.floor(Math.random() * 10) + 1;
 		const role2 = Math.floor(Math.random() * 10) + 1;
 		const role = role1 + role2;
@@ -327,13 +365,14 @@
 			.map((x) => x.probability)
 			.reduce((a, b) => a + b, 0);
 		const total = targetFrameModification.tagets
+			.filter((x) => x.text != null || type == 'gezielter Schuss')
 			.map((x) => x.probability)
 			.reduce((a, b) => a + b, 0);
 		const randomSelection = Math.floor(Math.random() * total);
 
-		const value = targetFrameModification.tagets.flatMap((x) =>
-			Array.from({ length: x.probability }).map((y) => x.text)
-		);
+		const value = targetFrameModification.tagets
+			.filter((x) => x.text != null || type == 'gezielter Schuss')
+			.flatMap((x) => Array.from({ length: x.probability }).map((y) => x.text));
 
 		const hit = value[randomSelection];
 
@@ -346,97 +385,106 @@
 	}
 </script>
 
-<article>
-	<header>Distanz</header>
-	<label>
-		<input type="number" bind:value={range} maxlength="5" /> m
-		<input type="range" min="1" max="1000" bind:value={range} />
-	</label>
-</article>
+{#if loading}
+	<span aria-busy="true"> loading… </span>
+{/if}
 
-<article>
-	<header>
-		<h5>
-			Umgebungseinfluss {environmentalFactors}
-		</h5>
-	</header>
-	<label>
-		<input type="radio" bind:group={environmentalFactors} value={1 / 5} />
-		kein
-	</label>
-	<label>
-		<input type="radio" bind:group={environmentalFactors} value={1 / 3} />
-		gering
-	</label>
-	<label>
-		<input type="radio" bind:group={environmentalFactors} value={1 / 2} />
-		mittel
-	</label>
-	<label>
-		<input type="radio" bind:group={environmentalFactors} value={2} />
-		stark
-	</label>
-	<label>
-		<input type="radio" bind:group={environmentalFactors} value={5} />
-		extrem
-	</label>
-</article>
-<article>
-	<header>
-		<h5>Bewegungsmodifikator {movementModification}</h5>
-	</header>
-	<label>
-		<input type="radio" bind:group={movementModification} value={0} />
-		keine
-	</label>
-	<label>
-		<input type="radio" bind:group={movementModification} value={5} />
-		leichte Bewegung (langsam)
-	</label>
-	<label>
-		<input type="radio" bind:group={movementModification} value={10} />
-		leichte Bewegung (schnell)
-	</label>
-	<label>
-		<input type="radio" bind:group={movementModification} value={15} />
-		komplexe Bewegung (langsam)
-	</label>
-	<label>
-		<input type="radio" bind:group={movementModification} value={20} />
-		komplexe Bewegung (schnell)
-	</label>
-</article>
+{#if authenticationRequired}
+	<a href="https://dreibart.de/rpgdb" target="_blank">Login</a>
+{/if}
 
-<article>
-	<header>
-		<h5>
-			Größenmodifikation {targetFrameModification.modifier}
-			{Math.floor(
-				100 -
-					(100 *
-						targetFrameModification.tagets
-							.filter((x) => x.text == null)
-							.map((x) => x.probability)
-							.reduce((a, b) => a + b, 0)) /
-						targetFrameModification.tagets.map((x) => x.probability).reduce((a, b) => a + b, 0)
-			)}%
-		</h5>
-	</header>
-
-	<label>
-		<input type="radio" bind:group={targetFrameModification} value={gate} />
-		Tor (3m x 3m) {numberOfPersons} Personen
-	</label>
-	<!-- {#if targetFrameModification == gate} -->
-	<input type="range" bind:value={numberOfPersons} max="3" min="1" />
-	<!-- {/if} -->
-	{#each targetFrameModifiers as tm}
+{#if character}
+	<article>
+		<header>Distanz</header>
 		<label>
-			<input type="radio" bind:group={targetFrameModification} value={tm} />
-			{tm.name}
+			<input type="number" bind:value={range} maxlength="5" /> m
+			<input type="range" min="1" max="1000" bind:value={range} />
 		</label>
-	{/each}
-	<!-- <label>
+	</article>
+
+	<article>
+		<header>
+			<h5>
+				Umgebungseinfluss {environmentalFactors}
+			</h5>
+		</header>
+		<label>
+			<input type="radio" bind:group={environmentalFactors} value={1 / 5} />
+			kein
+		</label>
+		<label>
+			<input type="radio" bind:group={environmentalFactors} value={1 / 3} />
+			gering
+		</label>
+		<label>
+			<input type="radio" bind:group={environmentalFactors} value={1 / 2} />
+			mittel
+		</label>
+		<label>
+			<input type="radio" bind:group={environmentalFactors} value={2} />
+			stark
+		</label>
+		<label>
+			<input type="radio" bind:group={environmentalFactors} value={5} />
+			extrem
+		</label>
+	</article>
+	<article>
+		<header>
+			<h5>Bewegungsmodifikator {movementModification}</h5>
+		</header>
+		<label>
+			<input type="radio" bind:group={movementModification} value={0} />
+			keine
+		</label>
+		<label>
+			<input type="radio" bind:group={movementModification} value={5} />
+			leichte Bewegung (langsam)
+		</label>
+		<label>
+			<input type="radio" bind:group={movementModification} value={10} />
+			leichte Bewegung (schnell)
+		</label>
+		<label>
+			<input type="radio" bind:group={movementModification} value={15} />
+			komplexe Bewegung (langsam)
+		</label>
+		<label>
+			<input type="radio" bind:group={movementModification} value={20} />
+			komplexe Bewegung (schnell)
+		</label>
+	</article>
+
+	<article>
+		<header>
+			<h5>
+				Größenmodifikation {targetFrameModification.modifier}
+				{Math.floor(
+					100 -
+						(100 *
+							targetFrameModification.tagets
+								.filter((x) => x.text == null)
+								.map((x) => x.probability)
+								.reduce((a, b) => a + b, 0)) /
+							targetFrameModification.tagets.map((x) => x.probability).reduce((a, b) => a + b, 0)
+				)}%
+			</h5>
+		</header>
+
+		<label>
+			<input type="radio" bind:group={targetFrameModification} value={gate} />
+			Tor (3m x 3m) {numberOfPersons} Personen
+		</label>
+		<!-- {#if targetFrameModification == gate} -->
+		<input type="range" bind:value={numberOfPersons} max="3" min="1" />
+		<!-- {/if} -->
+		{#each targetFrameModifiers as tm}
+			<label>
+				<input type="radio" bind:group={targetFrameModification} value={tm} />
+				{tm.name}
+			</label>
+		{/each}
+		<!-- <label>
 		<input type="radio" bind:group={targetFrameModification} value={0} />
 		Tor (3m x 3m)
 	</label>
@@ -460,25 +508,27 @@
 		<input type="radio" bind:group={targetFrameModification} value={30} />
 		Auge (3cm x 3cm)
 	</label> -->
-</article>
+	</article>
 
-<article>
-	<header>
-		<h5>Gesamtmodifiaktion {totalModification}</h5>
-	</header>
-	<button onclick={() => (lastHit = roll())}>Schießen</button>
-	<div>
-		{#if lastHit !== undefined}
-			{#if lastHit == false}
-				Verfehlt
-			{:else}
-				Treffer in {lastHit.location} mit Ausweichschwierigkeit {lastHit.dodgeDificulty}<br />
-				Skillwurf war {lastHit.skillResult}
-				({lastHit.roll[0]}, {lastHit.roll[1]})
+	<article>
+		<header>
+			<h5>Gesamtmodifiaktion {totalModification}</h5>
+		</header>
+		<button onclick={() => (lastHit = roll('nomaler Schuss'))}>Schnellschuss</button>
+		<button onclick={() => (lastHit = roll('gezielter Schuss'))}>Gezielt Schießen</button>
+		<div>
+			{#if lastHit !== undefined}
+				{#if lastHit == false}
+					Verfehlt
+				{:else}
+					Treffer in {lastHit.location} mit Ausweichschwierigkeit {lastHit.dodgeDificulty}<br />
+					Skillwurf war {lastHit.skillResult}
+					({lastHit.roll[0]}, {lastHit.roll[1]})
+				{/if}
 			{/if}
-		{/if}
-	</div>
-</article>
+		</div>
+	</article>
+{/if}
 
 <style lang="scss">
 	input[type='number'] {
