@@ -305,7 +305,7 @@
 		  } = $state();
 
 	let character: undefined | CharactrData = $state();
-	let error: undefined | {typ:'error', description:string} = $state();
+	let error: undefined | { typ: 'error'; description: string } = $state();
 	let loading = $state(false);
 	onMount(async () => {
 		loading = true;
@@ -315,10 +315,10 @@
 				const characterId = parseInt(charString);
 				const char = await characterData(characterId);
 				if (char.typ == 'error') {
-                    error = char;		
-                    character = undefined;		
+					error = char;
+					character = undefined;
 				} else {
-                    error = undefined;		
+					error = undefined;
 					character = char;
 				}
 			}
@@ -414,14 +414,14 @@
 {/if}
 
 {#if error}
-<article>
-    <header>Fehler</header>
-    {error.description}
-</article>
+	<article>
+		<header>Fehler</header>
+		{error.description}
+	</article>
 {/if}
 
 {#if character}
-	<h1>{character.name}</h1>
+	<h1 style="width: 90vw; justify-self: center;">{character.name}</h1>
 	<article>
 		<header>Distanz</header>
 		<label>
@@ -550,7 +550,15 @@
 					Verfehlt Skillwurf war {lastHit.skillResult}
 					({lastHit.roll[0]}, {lastHit.roll[1]})
 				{:else}
-					Treffer in {lastHit.location} mit Ausweichschwierigkeit {lastHit.dodgeDificulty}<br />
+					Treffer in
+					<strong>
+						{lastHit.location}
+					</strong>
+					mit Ausweichschwierigkeit
+					<strong>
+						{lastHit.dodgeDificulty}
+					</strong>
+					<br />
 					Skillwurf war {lastHit.skillResult}
 					({lastHit.roll[0]}, {lastHit.roll[1]})
 				{/if}
@@ -560,7 +568,16 @@
 {/if}
 
 <style lang="scss">
+	article {
+		max-width: 15rem;
+		width: 15rem;
+	}
 	input[type='number'] {
 		width: min-content;
+	}
+	button {
+		display: block;
+		width: 100%;
+		margin: 1rem 0;
 	}
 </style>
