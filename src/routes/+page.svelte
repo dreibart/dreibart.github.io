@@ -305,6 +305,7 @@
 		  } = $state();
 
 	let character: undefined | CharactrData = $state();
+	let error: undefined | {typ:'error', description:string} = $state();
 	let loading = $state(false);
 	onMount(async () => {
 		loading = true;
@@ -314,10 +315,10 @@
 				const characterId = parseInt(charString);
 				const char = await characterData(characterId);
 				if (char.typ == 'error') {
-					if (char.description == 'Authentication needed') {
-						authenticationRequired = true;
-					}
+                    error = char;		
+                    character = undefined;		
 				} else {
+                    error = undefined;		
 					character = char;
 				}
 			}
@@ -329,7 +330,7 @@
 
 	async function characterData(
 		charactieId: number
-	): Promise<CharactrData | { typ: 'error'; description: 'Authentication needed' }> {
+	): Promise<CharactrData | { typ: 'error'; description: string }> {
 		const result = await fetch(
 			`https://dreibart.de/rpgdb/requestHelper.php?character=${charactieId}`,
 			{
@@ -345,7 +346,7 @@
 
 	type CharactrData = {
 		name: number;
-		typ: 'character';
+		typ: 'skill';
 		'nomaler Schuss': number;
 		'gezielter Schuss': number;
 	};
@@ -410,6 +411,13 @@
 
 {#if authenticationRequired}
 	<a href="https://dreibart.de/rpgdb" target="_blank">Login</a>
+{/if}
+
+{#if error}
+<article>
+    <header>Fehler</header>
+    {error.description}
+</article>
 {/if}
 
 {#if character}
