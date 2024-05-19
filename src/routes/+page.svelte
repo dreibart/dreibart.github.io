@@ -291,8 +291,13 @@
 
 	let lastHit:
 		| undefined
-		| false
 		| {
+				hit: false;
+				roll: readonly [number, number];
+				skillResult: number;
+		  }
+		| {
+				hit: true;
 				location: string;
 				dodgeDificulty: number;
 				roll: readonly [number, number];
@@ -345,9 +350,9 @@
 		'gezielter Schuss': number;
 	};
 
-	function roll(type: 'nomaler Schuss' | 'gezielter Schuss') {
+	function roll(type: 'nomaler Schuss' | 'gezielter Schuss'): typeof lastHit {
 		if (character == undefined) {
-			return false;
+			throw new Error('No Character');
 		}
 		let skill = character[type];
 		const role1 = Math.floor(Math.random() * 10) + 1;
@@ -357,7 +362,11 @@
 		const succsess = result - totalModification >= 0;
 
 		if (!succsess) {
-			return false;
+			return {
+				hit: false,
+				roll: [role1, role2],
+				skillResult: result
+			};
 		}
 
 		targetFrameModification.tagets
@@ -377,11 +386,21 @@
 		const hit = value[randomSelection];
 
 		if (hit == null) {
-			return false;
+			return {
+				hit: false,
+				roll: [role1, role2],
+				skillResult: result
+			};
 		}
 
 		const dodgeDificulty = result - totalModification;
-		return { location: hit, dodgeDificulty, roll: [role1, role2] as const, skillResult: result };
+		return {
+			hit: true,
+			location: hit,
+			dodgeDificulty,
+			roll: [role1, role2] as const,
+			skillResult: result
+		};
 	}
 </script>
 
@@ -394,6 +413,7 @@
 {/if}
 
 {#if character}
+	<h1>{character.name}</h1>
 	<article>
 		<header>Distanz</header>
 		<label>
@@ -518,8 +538,9 @@
 		<button onclick={() => (lastHit = roll('gezielter Schuss'))}>Gezielt Schießen</button>
 		<div>
 			{#if lastHit !== undefined}
-				{#if lastHit == false}
-					Verfehlt
+				{#if lastHit.hit == false}
+					Verfehlt Skillwurf war {lastHit.skillResult}
+					({lastHit.roll[0]}, {lastHit.roll[1]})
 				{:else}
 					Treffer in {lastHit.location} mit Ausweichschwierigkeit {lastHit.dodgeDificulty}<br />
 					Skillwurf war {lastHit.skillResult}
