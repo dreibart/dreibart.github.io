@@ -375,13 +375,13 @@
 			.map((x) => x.probability)
 			.reduce((a, b) => a + b, 0);
 		const total = targetFrameModification.tagets
-			.filter((x) => x.text != null || type == 'gezielter Schuss')
+			.filter((x) => x.text != null || type == 'nomaler Schuss')
 			.map((x) => x.probability)
 			.reduce((a, b) => a + b, 0);
 		const randomSelection = Math.floor(Math.random() * total);
 
 		const value = targetFrameModification.tagets
-			.filter((x) => x.text != null || type == 'gezielter Schuss')
+			.filter((x) => x.text != null || type == 'nomaler Schuss')
 			.flatMap((x) => Array.from({ length: x.probability }).map((y) => x.text));
 
 		const hit = value[randomSelection];
