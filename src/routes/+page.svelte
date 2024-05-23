@@ -332,9 +332,12 @@
 		charactieId: number
 	): Promise<CharactrData | { typ: 'error'; description: string }> {
 		const result = await fetch(
-			`https://dreibart.de/rpgdb/requestHelper.php?character=${charactieId}`,
+			`https://dreibart.de/rpgdb/restAPI.php/shootSkill/request?character=${charactieId}`,
 			{
-				credentials: 'include'
+				credentials: 'include',
+				headers: {
+					'X-Auth-Token': '123456789'
+				}
 			}
 		);
 		if (result.status == 401) {
@@ -565,6 +568,8 @@
 			{/if}
 		</div>
 	</article>
+	{:else}
+	<a href="?character-id=840" >Test</a>
 {/if}
 
 <style lang="scss">
