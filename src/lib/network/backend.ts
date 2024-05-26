@@ -20,6 +20,9 @@ type sympolData = ({
     type: 'array'
     valueType: sympolData;
 } | {
+    type: 'record'
+    valueType: sympolData;
+} | {
     type: 'tuple'
     valueTypes: readonly sympolData[];
 }) & {
@@ -56,7 +59,26 @@ const api = {
                 {
                     type: 'object',
                     properties: {
-                        typ: { type: 'enum', values: ['skill'] }
+                        typ: { type: 'enum', values: ['skill'] },
+                        name: { type: 'string' },
+                        "gezielter Schuss": {
+                            type: 'object', properties: {
+                                skillNumber: { type: 'number' },
+                                skillName: { type: 'string' },
+                                baseValue: { type: 'number' },
+                                modifiedValue: { type: 'number' },
+                                value: { type: 'number' },
+                            }
+                        },
+                        "nomaler Schuss": {
+                            type: 'object', properties: {
+                                skillNumber: { type: 'number' },
+                                skillName: { type: 'string' },
+                                baseValue: { type: 'number' },
+                                modifiedValue: { type: 'number' },
+                                value: { type: 'number' },
+                            }
+                        },
                     }
                 }
             ]
@@ -196,6 +218,12 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
             return check(property, value);
         });
     }
+    if (symbol.type == 'record' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
+        return Object.keys(obj).every((key) => {
+            const value = (obj as Record<string, unknown>)[key];
+            return check(symbol.valueType, value);
+        });
+    }
     if (symbol.type == 'array' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
         return obj.every((element) => {
             return check(symbol.valueType, element);
@@ -303,7 +331,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
     });
 
     if (response.status == 401) {
-        const token = window.localStorage.removeItem('token');
+        window.localStorage.removeItem('token');
         return await requestFromBackend(path, method, ...params);
     }
 
