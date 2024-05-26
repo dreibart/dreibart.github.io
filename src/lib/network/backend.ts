@@ -37,7 +37,12 @@ type ApiData = {
     };
     result: sympolData[];
 };
-
+const errorSymbol = {
+    type: 'object', properties: {
+        typ: { type: 'enum', values: ['error'] },
+        description: { type: 'string' },
+    }
+} as const satisfies sympolData;
 const api = {
     '/character': {
         'GET': {
@@ -87,34 +92,35 @@ const api = {
 
     '/character/{id:number}': {
         'GET': {
-            result: [{
-                type: 'object',
-                properties: {
-                    typ: {
-                        type: 'enum',
-                        values: ['character']
-                    },
-                    content: {
-                        type: 'object',
-                        properties: {
-                            'characterNumber': { type: 'number' },
-                            'characterName': { type: 'string' },
-                            'characterAge': { type: 'number' },
-                            'characterGender': { type: 'number' },
-                            'characterMind': { type: 'number' },
-                            'characterPicture': { type: 'string' },
-                            'characterSize': { type: 'number' },
-                            'characterType': { type: 'number' },
-                            'characterWeight': { type: 'number' },
-                            'creator': { type: 'number' },
-                            'lookingForGroup': { type: 'number' },
-                            'race': { type: 'string' },
-                            'visibility': { type: 'number' },
-                            'world': { type: 'string' },
+            result: [errorSymbol,
+                {
+                    type: 'object',
+                    properties: {
+                        typ: {
+                            type: 'enum',
+                            values: ['character']
+                        },
+                        content: {
+                            type: 'object',
+                            properties: {
+                                'characterNumber': { type: 'number' },
+                                'characterName': { type: 'string' },
+                                'characterAge': { type: 'number' },
+                                'characterGender': { type: 'number' },
+                                'characterMind': { type: 'string' },
+                                'characterPicture': { type: 'string' },
+                                'characterSize': { type: 'number' },
+                                'characterType': { type: 'string' },
+                                'characterWeight': { type: 'number' },
+                                'creator': { type: 'number' },
+                                'lookingForGroup': { type: 'number' },
+                                'race': { type: 'string' },
+                                'visibility': { type: 'number' },
+                                'world': { type: 'string' },
+                            }
                         }
-                    }
+                    },
                 },
-            },
             ]
         }
     }
@@ -206,7 +212,7 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
     if (symbol.optional == true && obj === undefined) {
         return true;
     }
-    if (symbol.type == 'string' && typeof obj == 'string') {
+    if (symbol.type == 'string' && (typeof obj == 'string'||typeof obj == 'number')) {// hack remove number
         return true;
     }
     if (symbol.type == 'number' && typeof obj == 'number') {

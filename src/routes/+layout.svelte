@@ -5,11 +5,14 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { delay } from '$lib/misc';
 	import Hamburger from '$lib/hamburger.svelte';
+	import { browser } from '$app/environment';
+	import { base } from '$app/paths';
 
 	let showSubMenue = $state(false);
 	let loaded = $state(false);
 	let scrollPosition = $state(0);
-	let character: Result<'/character/{id:number}', 'GET'> | undefined = $state();
+    let characterId:undefined|number=$state();
+	let character: (Result<'/character/{id:number}', 'GET'>&{typ:'character'}) | undefined = $state();
 	let observer: MutationObserver;
 
 	onMount(async () => {
@@ -35,8 +38,8 @@
 
 			const charString = $page.url.searchParams.get('character-id');
 			if (charString) {
-				const characterId = parseInt(charString);
-
+				 characterId = parseInt(charString);
+                
 				character = await requestFromBackend('/character/{id:number}', 'GET', { id: characterId });
 			}
 
@@ -71,6 +74,19 @@
 		}
 	});
 
+	$effect(() => {
+		if (browser) {
+			const charString = $page.url.searchParams.get('character-id');
+			if (charString) {
+				 characterId = parseInt(charString);
+
+				requestFromBackend('/character/{id:number}', 'GET', { id: characterId }).then(
+					(c) => (character = c)
+				);
+			}
+		}
+	});
+
 	onDestroy(() => {
 		observer?.disconnect();
 	});
@@ -82,7 +98,8 @@
 	</main>
 	<nav class="sub-menu" class:show={showSubMenue}>
 		<ul>
-			<li><a>Charakter Auswahl</a></li>
+			<li><a href="{base}/?character-id={characterId}" onclick={()=>{showSubMenue = false}}>Charakter Auswahl</a></li>
+			<li><a href="{base}/range-combat/?character-id={characterId}" onclick={()=>{showSubMenue = false}}>FernkampfTool</a></li>
 		</ul>
 	</nav>
 	<nav class="bar" class:scrolled={scrollPosition == 1} style="--scroll-position:{scrollPosition}">
@@ -139,6 +156,7 @@
 		backdrop-filter: blur(10px);
 		ul {
 			display: flex;
+            flex-direction: column-reverse;
 			align-items: end;
 			justify-items: end;
 			justify-content: end;
@@ -146,12 +164,17 @@
 			margin: calc(var(--modifier) - 100vh) calc(var(--modifier) - (100vw - var(--scrollbar-width)));
 			width: calc(100vw - var(--scrollbar-width));
 			height: calc(100vh - var(--app-bar-height));
+            li{
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
 		}
 	}
 	main {
 		margin-bottom: var(--app-bar-height);
 	}
 	nav.bar {
+        overflow: hidden;
 		height: var(--app-bar-height);
 		position: fixed;
 		bottom: 0;
