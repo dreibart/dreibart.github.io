@@ -20,18 +20,18 @@
 			close();
 		} else {
 			window.onscroll = (e) => {
-				// var viewportHeight = Math.max(
-				// 	document.documentElement.clientHeight,
-				// 	window.innerHeight || 0
-				// ); // Viewport height (px)
-				// var currentPosition =
-				// 	window.scrollY || document.documentElement.scrollTop || document.body.scrollTop; // Current scroll position (px)
-				// var documentHeight = window.outerHeight; // Document height (px)
-				let scrollPositionRelative =
-					window.scrollY / (document.body.scrollHeight - (window.visualViewport?.height ?? 1)); // The document height is reduced by the height of the viewport so that we reach 100% at the bottom
-
-				scrollPosition = scrollPositionRelative;
+				calculateScrollPosition();
 			};
+			calculateScrollPosition();
+			function calculateScrollPosition() {
+				const hight = document.body.scrollHeight - (window.visualViewport?.height ?? 1) + 103;
+				if (hight <= 0) {
+					scrollPosition = 1;
+				} else {
+					const scrollPositionRelative = window.scrollY / hight;
+					scrollPosition = scrollPositionRelative;
+				}
+			}
 
 			const charString = $page.url.searchParams.get('character-id');
 			if (charString) {
@@ -47,6 +47,7 @@
 					window.innerWidth - document.documentElement.clientWidth + 'px'
 				);
 				console.log(window.innerWidth - document.documentElement.clientWidth + 'px');
+				calculateScrollPosition();
 			}
 			observer = new MutationObserver(() => {
 				_calculateScrollbarWidth();
@@ -93,14 +94,16 @@
 						<h1>
 							{character.content.characterName}
 						</h1>
-						<h2>{character.content.world}</h2>
+						<h2>
+							{character.content.world}
+						</h2>
 					</hgroup>
 				{/if}
 			</li>
 		</ul>
 		<ul>
 			<li>
-                <Hamburger bind:isOpen={showSubMenue}/>
+				<Hamburger bind:isOpen={showSubMenue} />
 				<!-- <input type="checkbox" bind:checked={showSubMenue} /> -->
 			</li>
 		</ul>
@@ -124,7 +127,8 @@
 			padding: calc(var(--modifier)) calc(var(--modifier));
 		}
 		display: block;
-		transition: all 1s cubic-bezier(.49,.84,.23,1.36);
+
+		transition: all 1s cubic-bezier(0.49, 0.84, 0.23, 1.36);
 		border-radius: 100%;
 		border: 1px solid var(--pico-primary);
 		height: 0;
@@ -132,25 +136,28 @@
 		position: fixed;
 		bottom: -3px;
 		right: -3px;
-        backdrop-filter: blur(10px);
+		backdrop-filter: blur(10px);
 		ul {
-            display: flex;
-            align-items: end;
-            justify-items: end;
-            justify-content: end;
+			display: flex;
+			align-items: end;
+			justify-items: end;
+			justify-content: end;
 			overflow-y: auto;
 			margin: calc(var(--modifier) - 100vh) calc(var(--modifier) - (100vw - var(--scrollbar-width)));
 			width: calc(100vw - var(--scrollbar-width));
 			height: calc(100vh - var(--app-bar-height));
 		}
 	}
+	main {
+		margin-bottom: var(--app-bar-height);
+	}
 	nav.bar {
 		height: var(--app-bar-height);
-		position: sticky;
+		position: fixed;
 		bottom: 0;
-        left: 0;
-        right: 0;
-		transition: 450ms border-bottom-color;
+		left: 0;
+		right: 0;
+		transition: 1s border-top-color;
 		// background-color: rgba(var(--pico-background-color),  1.7) ;
 		backdrop-filter: blur(10px);
 		border-top: 1px var(--pico-primary) solid;
