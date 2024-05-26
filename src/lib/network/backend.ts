@@ -97,20 +97,23 @@ const api = {
                     content: {
                         type: 'object',
                         properties: {
-
-
                             'characterNumber': { type: 'number' },
                             'characterName': { type: 'string' },
                             'characterAge': { type: 'number' },
+                            'characterGender': { type: 'number' },
+                            'characterMind': { type: 'number' },
+                            'characterPicture': { type: 'string' },
+                            'characterSize': { type: 'number' },
+                            'characterType': { type: 'number' },
+                            'characterWeight': { type: 'number' },
+                            'creator': { type: 'number' },
+                            'lookingForGroup': { type: 'number' },
+                            'race': { type: 'string' },
+                            'visibility': { type: 'number' },
+                            'world': { type: 'string' },
                         }
                     }
                 },
-            }, {
-                type: 'object',
-                properties: {
-                    'typ': { type: 'enum', values: ['error'] },
-                    description: { type: 'string' },
-                }
             },
             ]
         }

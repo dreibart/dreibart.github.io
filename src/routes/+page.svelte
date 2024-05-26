@@ -334,13 +334,16 @@
 		}
 		loading = false;
 	});
-	type CharactrData = Result<'/shootSkill/request', 'GET'> & { typ: 'skill' };
+	type CharactrData = Result<'/shootSkill/request', 'GET'> & {
+		typ: 'skill';
+	};
 	async function characterData(
 		charactieId: number
 	): Promise<CharactrData | { typ: 'error'; description: string }> {
 		const result = await requestFromBackend('/shootSkill/request', 'GET', {
 			character: charactieId
 		});
+
 		return result;
 		// const result = await fetch(
 		// 	`https://dreibart.de/rpgdb/restAPI.php/shootSkill/request?character=${charactieId}`,
@@ -435,7 +438,6 @@
 {/if}
 
 {#if character}
-	<h1 style="width: 90vw; justify-self: center;">{character.name}</h1>
 	<div class="data">
 		<article>
 			<header>Distanz</header>
@@ -587,12 +589,27 @@
 
 <style lang="scss">
 	.data {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
 		flex-wrap: wrap;
 		gap: 1em;
+		
+		@media (max-width:1023px) {
+			grid-template-columns: repeat(2, 1fr);
+			
+		}
+		@media (max-width:767px) {
+			grid-template-columns: repeat(1, 1fr);
+			
+		}
+
+		* {
+			min-width: 0;
+			overflow: hidden;
+		}
 		article {
-			max-width: 15rem;
-			width: 15rem;
+			// max-width: 15rem;
+			// width: 15rem;
 		}
 		input[type='number'] {
 			width: min-content;
