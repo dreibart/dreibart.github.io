@@ -285,7 +285,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
                     clearInterval(timer);
                     const token = window.localStorage.getItem('token');
                     if (token == null) {
-                        reject('closed');
+                        reject('Authentication Window closed');
                     } else {
                         resolve(token);
                     }

@@ -280,6 +280,7 @@
 	);
 
 	let authenticationRequired = $state(false);
+	let lastError: string | undefined = $state(undefined);
 
 	type targetFrameModificationData = {
 		name: string;
@@ -324,16 +325,22 @@
 					character = char;
 				}
 			}
-		} catch (error) {
+		} catch (errorReason) {
+			error = {
+				typ: 'error',
+				description: errorReason as string
+			};
 			console.error(error);
 		}
 		loading = false;
 	});
-type CharactrData = Result<'/shootSkill/request','GET'> & {typ:'skill'};
+	type CharactrData = Result<'/shootSkill/request', 'GET'> & { typ: 'skill' };
 	async function characterData(
 		charactieId: number
 	): Promise<CharactrData | { typ: 'error'; description: string }> {
-		const result = await requestFromBackend('/shootSkill/request', 'GET', { character: charactieId });
+		const result = await requestFromBackend('/shootSkill/request', 'GET', {
+			character: charactieId
+		});
 		return result;
 		// const result = await fetch(
 		// 	`https://dreibart.de/rpgdb/restAPI.php/shootSkill/request?character=${charactieId}`,
@@ -429,97 +436,98 @@ type CharactrData = Result<'/shootSkill/request','GET'> & {typ:'skill'};
 
 {#if character}
 	<h1 style="width: 90vw; justify-self: center;">{character.name}</h1>
-	<article>
-		<header>Distanz</header>
-		<label>
-			<input type="number" bind:value={range} maxlength="5" /> m
-			<input type="range" min="1" max="1000" bind:value={range} />
-		</label>
-	</article>
-
-	<article>
-		<header>
-			<h5>
-				Umgebungseinfluss {environmentalFactors}
-			</h5>
-		</header>
-		<label>
-			<input type="radio" bind:group={environmentalFactors} value={1 / 5} />
-			kein
-		</label>
-		<label>
-			<input type="radio" bind:group={environmentalFactors} value={1 / 3} />
-			gering
-		</label>
-		<label>
-			<input type="radio" bind:group={environmentalFactors} value={1 / 2} />
-			mittel
-		</label>
-		<label>
-			<input type="radio" bind:group={environmentalFactors} value={2} />
-			stark
-		</label>
-		<label>
-			<input type="radio" bind:group={environmentalFactors} value={5} />
-			extrem
-		</label>
-	</article>
-	<article>
-		<header>
-			<h5>Bewegungsmodifikator {movementModification}</h5>
-		</header>
-		<label>
-			<input type="radio" bind:group={movementModification} value={0} />
-			keine
-		</label>
-		<label>
-			<input type="radio" bind:group={movementModification} value={5} />
-			leichte Bewegung (langsam)
-		</label>
-		<label>
-			<input type="radio" bind:group={movementModification} value={10} />
-			leichte Bewegung (schnell)
-		</label>
-		<label>
-			<input type="radio" bind:group={movementModification} value={15} />
-			komplexe Bewegung (langsam)
-		</label>
-		<label>
-			<input type="radio" bind:group={movementModification} value={20} />
-			komplexe Bewegung (schnell)
-		</label>
-	</article>
-
-	<article>
-		<header>
-			<h5>
-				Größenmodifikation {targetFrameModification.modifier}
-				{Math.floor(
-					100 -
-						(100 *
-							targetFrameModification.tagets
-								.filter((x) => x.text == null)
-								.map((x) => x.probability)
-								.reduce((a, b) => a + b, 0)) /
-							targetFrameModification.tagets.map((x) => x.probability).reduce((a, b) => a + b, 0)
-				)}%
-			</h5>
-		</header>
-
-		<label>
-			<input type="radio" bind:group={targetFrameModification} value={gate} />
-			Tor (3m x 3m) {numberOfPersons} Personen
-		</label>
-		<!-- {#if targetFrameModification == gate} -->
-		<input type="range" bind:value={numberOfPersons} max="3" min="1" />
-		<!-- {/if} -->
-		{#each targetFrameModifiers as tm}
+	<div class="data">
+		<article>
+			<header>Distanz</header>
 			<label>
-				<input type="radio" bind:group={targetFrameModification} value={tm} />
-				{tm.name}
+				<input type="number" bind:value={range} maxlength="5" /> m
+				<input type="range" min="1" max="1000" bind:value={range} />
 			</label>
-		{/each}
-		<!-- <label>
+		</article>
+
+		<article>
+			<header>
+				<h5>
+					Umgebungseinfluss {environmentalFactors}
+				</h5>
+			</header>
+			<label>
+				<input type="radio" bind:group={environmentalFactors} value={1 / 5} />
+				kein
+			</label>
+			<label>
+				<input type="radio" bind:group={environmentalFactors} value={1 / 3} />
+				gering
+			</label>
+			<label>
+				<input type="radio" bind:group={environmentalFactors} value={1 / 2} />
+				mittel
+			</label>
+			<label>
+				<input type="radio" bind:group={environmentalFactors} value={2} />
+				stark
+			</label>
+			<label>
+				<input type="radio" bind:group={environmentalFactors} value={5} />
+				extrem
+			</label>
+		</article>
+		<article>
+			<header>
+				<h5>Bewegungsmodifikator {movementModification}</h5>
+			</header>
+			<label>
+				<input type="radio" bind:group={movementModification} value={0} />
+				keine
+			</label>
+			<label>
+				<input type="radio" bind:group={movementModification} value={5} />
+				leichte Bewegung (langsam)
+			</label>
+			<label>
+				<input type="radio" bind:group={movementModification} value={10} />
+				leichte Bewegung (schnell)
+			</label>
+			<label>
+				<input type="radio" bind:group={movementModification} value={15} />
+				komplexe Bewegung (langsam)
+			</label>
+			<label>
+				<input type="radio" bind:group={movementModification} value={20} />
+				komplexe Bewegung (schnell)
+			</label>
+		</article>
+
+		<article>
+			<header>
+				<h5>
+					Größenmodifikation {targetFrameModification.modifier}
+					{Math.floor(
+						100 -
+							(100 *
+								targetFrameModification.tagets
+									.filter((x) => x.text == null)
+									.map((x) => x.probability)
+									.reduce((a, b) => a + b, 0)) /
+								targetFrameModification.tagets.map((x) => x.probability).reduce((a, b) => a + b, 0)
+					)}%
+				</h5>
+			</header>
+
+			<label>
+				<input type="radio" bind:group={targetFrameModification} value={gate} />
+				Tor (3m x 3m) {numberOfPersons} Personen
+			</label>
+			<!-- {#if targetFrameModification == gate} -->
+			<input type="range" bind:value={numberOfPersons} max="3" min="1" />
+			<!-- {/if} -->
+			{#each targetFrameModifiers as tm}
+				<label>
+					<input type="radio" bind:group={targetFrameModification} value={tm} />
+					{tm.name}
+				</label>
+			{/each}
+			<!-- <label>
 		<input type="radio" bind:group={targetFrameModification} value={0} />
 		Tor (3m x 3m)
 	</label>
@@ -543,50 +551,56 @@ type CharactrData = Result<'/shootSkill/request','GET'> & {typ:'skill'};
 		<input type="radio" bind:group={targetFrameModification} value={30} />
 		Auge (3cm x 3cm)
 	</label> -->
-	</article>
+		</article>
 
-	<article>
-		<header>
-			<h5>Gesamtmodifiaktion {totalModification}</h5>
-		</header>
-		<button onclick={() => (lastHit = roll('nomaler Schuss'))}>Schnellschuss</button>
-		<button onclick={() => (lastHit = roll('gezielter Schuss'))}>Gezielt Schießen</button>
-		<div>
-			{#if lastHit !== undefined}
-				{#if lastHit.hit == false}
-					Verfehlt Skillwurf war {lastHit.skillResult}
-					({lastHit.roll[0]}, {lastHit.roll[1]})
-				{:else}
-					Treffer in
-					<strong>
-						{lastHit.location}
-					</strong>
-					mit Ausweichschwierigkeit
-					<strong>
-						{lastHit.dodgeDificulty}
-					</strong>
-					<br />
-					Skillwurf war {lastHit.skillResult}
-					({lastHit.roll[0]}, {lastHit.roll[1]})
+		<article>
+			<header>
+				<h5>Gesamtmodifiaktion {totalModification}</h5>
+			</header>
+			<button onclick={() => (lastHit = roll('nomaler Schuss'))}>Schnellschuss</button>
+			<button onclick={() => (lastHit = roll('gezielter Schuss'))}>Gezielt Schießen</button>
+			<div>
+				{#if lastHit !== undefined}
+					{#if lastHit.hit == false}
+						Verfehlt Skillwurf war {lastHit.skillResult}
+						({lastHit.roll[0]}, {lastHit.roll[1]})
+					{:else}
+						Treffer in
+						<strong>
+							{lastHit.location}
+						</strong>
+						mit Ausweichschwierigkeit
+						<strong>
+							{lastHit.dodgeDificulty}
+						</strong>
+						<br />
+						Skillwurf war {lastHit.skillResult}
+						({lastHit.roll[0]}, {lastHit.roll[1]})
+					{/if}
 				{/if}
-			{/if}
-		</div>
-	</article>
+			</div>
+		</article>
+	</div>
 {:else}
-	<a href="?character-id=840">Test</a>
+	<a href="?character-id=840" data-sveltekit-reload>Test</a>
 {/if}
 
 <style lang="scss">
-	article {
-		max-width: 15rem;
-		width: 15rem;
-	}
-	input[type='number'] {
-		width: min-content;
-	}
-	button {
-		display: block;
-		width: 100%;
-		margin: 1rem 0;
+	.data {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1em;
+		article {
+			max-width: 15rem;
+			width: 15rem;
+		}
+		input[type='number'] {
+			width: min-content;
+		}
+		button {
+			display: block;
+			width: 100%;
+			margin: 1rem 0;
+		}
 	}
 </style>
