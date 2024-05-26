@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import { requestFromBackend, type Result } from '$lib/network/backend';
 
 	const targetFrameModifiers: targetFrameModificationData[] = [
 		{
@@ -308,6 +309,7 @@
 	let error: undefined | { typ: 'error'; description: string } = $state();
 	let loading = $state(false);
 	onMount(async () => {
+		console.log('loding');
 		loading = true;
 		try {
 			const charString = $page.url.searchParams.get('character-id');
@@ -327,38 +329,40 @@
 		}
 		loading = false;
 	});
-
+type CharactrData = Result<'/shootSkill/request','GET'> & {typ:'skill'};
 	async function characterData(
 		charactieId: number
 	): Promise<CharactrData | { typ: 'error'; description: string }> {
-		const result = await fetch(
-			`https://dreibart.de/rpgdb/restAPI.php/shootSkill/request?character=${charactieId}`,
-			{
-				credentials: 'include',
-				headers: {
-					'X-Auth-Token': '123456789'
-				}
-			}
-		);
-		if (result.status == 401) {
-			return { typ: 'error', description: 'Authentication needed' };
-		} else {
-			return await result.json();
-		}
+		const result = await requestFromBackend('/shootSkill/request', 'GET', { character: charactieId });
+		return result;
+		// const result = await fetch(
+		// 	`https://dreibart.de/rpgdb/restAPI.php/shootSkill/request?character=${charactieId}`,
+		// 	{
+		// 		credentials: 'include',
+		// 		headers: {
+		// 			'X-Auth-Token': '123456789'
+		// 		}
+		// 	}
+		// );
+		// if (result.status == 401) {
+		// 	return { typ: 'error', description: 'Authentication needed' };
+		// } else {
+		// 	return await result.json();
+		// }
 	}
 
-	type CharactrData = {
-		name: number;
-		typ: 'skill';
-		'nomaler Schuss': number;
-		'gezielter Schuss': number;
-	};
+	// type CharactrData = {
+	// 	name: number;
+	// 	typ: 'skill';
+	// 	'nomaler Schuss': number;
+	// 	'gezielter Schuss': number;
+	// };
 
 	function roll(type: 'nomaler Schuss' | 'gezielter Schuss'): typeof lastHit {
 		if (character == undefined) {
 			throw new Error('No Character');
 		}
-		let skill = character[type];
+		let skill = character[type].value;
 		const role1 = Math.floor(Math.random() * 10) + 1;
 		const role2 = Math.floor(Math.random() * 10) + 1;
 		const role = role1 + role2;
@@ -568,8 +572,8 @@
 			{/if}
 		</div>
 	</article>
-	{:else}
-	<a href="?character-id=840" >Test</a>
+{:else}
+	<a href="?character-id=840">Test</a>
 {/if}
 
 <style lang="scss">
