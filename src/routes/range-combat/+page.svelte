@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { requestFromBackend, type Result } from '$lib/network/backend';
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 
 	const targetFrameModifiers: targetFrameModificationData[] = [
 		{
@@ -324,6 +326,8 @@
 					error = undefined;
 					character = char;
 				}
+			}else{
+				goto(`${base}/`);
 			}
 		} catch (errorReason) {
 			error = {
@@ -438,7 +442,7 @@
 {/if}
 
 {#if character}
-	<div class="data">
+	<div class="colomn-medium">
 		<article>
 			<header>Distanz</header>
 			<label>
@@ -564,34 +568,13 @@
 {/if}
 
 <style lang="scss">
-	.data {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		flex-wrap: wrap;
-		gap: 1em;
-
-		@media (max-width: 1023px) {
-			grid-template-columns: repeat(2, 1fr);
-		}
-		@media (max-width: 767px) {
-			grid-template-columns: repeat(1, 1fr);
-		}
-
-		* {
-			min-width: 0;
-			overflow: hidden;
-		}
-		article {
-			// max-width: 15rem;
-			// width: 15rem;
-		}
-		input[type='number'] {
-			width: min-content;
-		}
-		button {
-			display: block;
-			width: 100%;
-			margin: 1rem 0;
-		}
+	
+	input[type='number'] {
+		width: min-content;
+	}
+	button {
+		display: block;
+		width: 100%;
+		margin: 1rem 0;
 	}
 </style>

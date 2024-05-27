@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { requestFromBackend, type Result } from '$lib/network/backend';
-	import '@picocss/pico';
+	import '$lib/theme.scss';
 	import { onMount, onDestroy } from 'svelte';
 	import { delay } from '$lib/misc';
 	import Hamburger from '$lib/hamburger.svelte';
@@ -11,8 +11,9 @@
 	let showSubMenue = $state(false);
 	let loaded = $state(false);
 	let scrollPosition = $state(0);
-    let characterId:undefined|number=$state();
-	let character: (Result<'/character/{id:number}', 'GET'>&{typ:'character'}) | undefined = $state();
+	let characterId: undefined | number = $state();
+	let character: (Result<'/character/{id:number}', 'GET'> & { typ: 'character' }) | undefined =
+		$state();
 	let observer: MutationObserver;
 
 	onMount(async () => {
@@ -38,9 +39,15 @@
 
 			const charString = $page.url.searchParams.get('character-id');
 			if (charString) {
-				 characterId = parseInt(charString);
-                
-				character = await requestFromBackend('/character/{id:number}', 'GET', { id: characterId });
+				characterId = parseInt(charString);
+				const loaded = await requestFromBackend('/character/{id:number}', 'GET', {
+					id: characterId
+				});
+				if (loaded.typ == 'character') {
+					character = loaded;
+				} else {
+					characterId = undefined;
+				}
 			}
 
 			// scrollbar calculation
@@ -78,11 +85,17 @@
 		if (browser) {
 			const charString = $page.url.searchParams.get('character-id');
 			if (charString) {
-				 characterId = parseInt(charString);
+				characterId = parseInt(charString);
 
-				requestFromBackend('/character/{id:number}', 'GET', { id: characterId }).then(
-					(c) => (character = c)
-				);
+				requestFromBackend('/character/{id:number}', 'GET', {
+					id: characterId
+				}).then((loaded) => {
+					if (loaded.typ == 'character') {
+						character = loaded;
+					} else {
+						characterId = undefined;
+					}
+				});
 			}
 		}
 	});
@@ -98,8 +111,26 @@
 	</main>
 	<nav class="sub-menu" class:show={showSubMenue}>
 		<ul>
-			<li><a href="{base}/?character-id={characterId}" onclick={()=>{showSubMenue = false}}>Charakter Auswahl</a></li>
-			<li><a href="{base}/range-combat/?character-id={characterId}" onclick={()=>{showSubMenue = false}}>FernkampfTool</a></li>
+			<li>
+				<a
+					href="{base}/?character-id={characterId}"
+					onclick={() => {
+						showSubMenue = false;
+					}}>Charakter Auswahl</a
+				>
+			</li>
+			<li>
+				<a
+					aria-disabled={characterId == undefined}
+					href={characterId ? `${base}/range-combat/?character-id=${characterId}` : undefined}
+					onclick={() => {
+						if (!characterId) {
+							return false;
+						}
+						showSubMenue = false;
+					}}>FernkampfTool</a
+				>
+			</li>
 		</ul>
 	</nav>
 	<nav class="bar" class:scrolled={scrollPosition == 1} style="--scroll-position:{scrollPosition}">
@@ -107,7 +138,7 @@
 			<li>
 				{#if character}
 					<hgroup>
-						<img src={character.content.characterPicture} alt="Character Bild" />
+						<img class="character-image" src={character.content.characterPicture} alt="Character Bild" />
 						<h1>
 							{character.content.characterName}
 						</h1>
@@ -156,7 +187,7 @@
 		backdrop-filter: blur(10px);
 		ul {
 			display: flex;
-            flex-direction: column-reverse;
+			flex-direction: column-reverse;
 			align-items: end;
 			justify-items: end;
 			justify-content: end;
@@ -164,17 +195,17 @@
 			margin: calc(var(--modifier) - 100vh) calc(var(--modifier) - (100vw - var(--scrollbar-width)));
 			width: calc(100vw - var(--scrollbar-width));
 			height: calc(100vh - var(--app-bar-height));
-            li{
-                padding-top: 0.5rem;
-                padding-bottom: 0.5rem;
-            }
+			li {
+				padding-top: 0.5rem;
+				padding-bottom: 0.5rem;
+			}
 		}
 	}
 	main {
 		margin-bottom: var(--app-bar-height);
 	}
 	nav.bar {
-        overflow: hidden;
+		overflow: hidden;
 		height: var(--app-bar-height);
 		position: fixed;
 		bottom: 0;
@@ -208,10 +239,7 @@
 			grid-area: img;
 			margin-right: 0.5rem;
 			margin-left: var(--pico-nav-element-spacing-vertical);
-			height: 3em;
-			width: 3em;
-			object-fit: cover;
-			border-radius: 3rem;
+		
 		}
 	}
 </style>

@@ -111,12 +111,5 @@
 </table>
 
 <style lang="scss">
-	img.character-image {
-		height: 3rem;
-		width: 3rem;
-		overflow: hidden;
-		background-color: var(--pico-primary);
-		object-fit: cover;
-		border-radius: 3rem;
-	}
+	
 </style>
