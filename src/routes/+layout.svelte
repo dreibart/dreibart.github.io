@@ -173,12 +173,13 @@
 			height: calc(3 * var(--modifier));
 			width: calc(3 * var(--modifier));
 			padding: calc(var(--modifier)) calc(var(--modifier));
+            border: 1px solid var(--pico-primary);
 		}
 		display: block;
 
 		transition: all 1s cubic-bezier(0.49, 0.84, 0.23, 1.36);
 		border-radius: 100%;
-		border: 1px solid var(--pico-primary);
+		border: 1px solid transparent;
 		height: 0;
 		width: 0;
 		position: fixed;
