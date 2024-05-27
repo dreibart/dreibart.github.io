@@ -133,12 +133,16 @@
 			</li>
 		</ul>
 	</nav>
-	<nav class="bar" class:scrolled={scrollPosition == 1} style="--scroll-position:{scrollPosition}">
+	<nav class="bar" class:scrolled={scrollPosition != 1} style="--scroll-position:{scrollPosition}">
 		<ul>
 			<li>
 				{#if character}
 					<hgroup>
-						<img class="character-image" src={character.content.characterPicture} alt="Character Bild" />
+						<img
+							class="character-image"
+							src={character.content.characterPicture}
+							alt="Character Bild"
+						/>
 						<h1>
 							{character.content.characterName}
 						</h1>
@@ -173,7 +177,8 @@
 			height: calc(3 * var(--modifier));
 			width: calc(3 * var(--modifier));
 			padding: calc(var(--modifier)) calc(var(--modifier));
-            border: 1px solid var(--pico-primary);
+			border: 1px solid var(--pico-primary);
+			backdrop-filter: blur(5px) grayscale(100%);
 		}
 		display: block;
 
@@ -185,7 +190,7 @@
 		position: fixed;
 		bottom: -3px;
 		right: -3px;
-		backdrop-filter: blur(10px);
+		// backdrop-filter: blur(0px);
 		ul {
 			display: flex;
 			flex-direction: column-reverse;
@@ -205,6 +210,9 @@
 	main {
 		margin-bottom: var(--app-bar-height);
 	}
+	nav.sub-menu.show ~ nav.bar {
+		border-top: 1px var(--pico-primary) solid;
+	}
 	nav.bar {
 		overflow: hidden;
 		height: var(--app-bar-height);
@@ -215,9 +223,9 @@
 		transition: 1s border-top-color;
 		// background-color: rgba(var(--pico-background-color),  1.7) ;
 		backdrop-filter: blur(10px);
-		border-top: 1px var(--pico-primary) solid;
+		border-top: 1px transparent solid;
 		&.scrolled {
-			border-top: 1px transparent solid;
+			border-top: 1px var(--pico-primary) solid;
 			// opacity: 0.8;
 			// background-color: rgba(  var(--pico-background-color), 0.8);
 		}
@@ -240,7 +248,6 @@
 			grid-area: img;
 			margin-right: 0.5rem;
 			margin-left: var(--pico-nav-element-spacing-vertical);
-		
 		}
 	}
 </style>
