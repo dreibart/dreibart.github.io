@@ -212,7 +212,7 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
     if (symbol.optional == true && obj === undefined) {
         return true;
     }
-    if (symbol.type == 'string' && (typeof obj == 'string'||typeof obj == 'number')) {// hack remove number
+    if (symbol.type == 'string' && (typeof obj == 'string' || typeof obj == 'number')) {// hack remove number
         return true;
     }
     if (symbol.type == 'number' && typeof obj == 'number') {
@@ -251,7 +251,7 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
     return false;
 }
 
-
+let tokenPromise: undefined | Promise<string>;
 export async function requestFromBackend<TPath extends Pathes, TMethod extends Method<TPath>>(path: TPath, method: TMethod, ...params: EmptyToVoid<UndefinableToOptional<RoutParams<TPath> & QueryParams<TPath, TMethod>>>): Promise<Result<TPath, TMethod>> {
     const parameters = params[0] as Record<string, unknown>;
     const currentData = api[path][method] as ApiData;
@@ -309,7 +309,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
     let token = window.localStorage.getItem('token');
     if (token == null) {
         // todo : get token
-        const promise = new Promise<string>((resolve, reject) => {
+        const promise = tokenPromise = tokenPromise ?? new Promise<string>((resolve, reject) => {
             const location = new URL(window.location.toString());
             location.search = '';
             const dialog = window.open(`https://dreibart.de/rpgdb/apiLogin.php?target=${encodeURIComponent(location.toString())}`, '_blank', 'toolbar=0,menubar=0');
@@ -326,6 +326,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
                     } else {
                         resolve(token);
                     }
+                    tokenPromise = undefined;
                 }
             }, 1000);
         });
