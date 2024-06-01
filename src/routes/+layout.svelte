@@ -119,7 +119,7 @@
 </script>
 
 {#if popUpBlocker}
-	<dialog open>
+	<dialog open style="flex-direction: column;">
 		<p>Bitte deaktivieren Sie ihren Popup Blocker</p>
 		<div>
 			<button onclick={() => retryBlocking()}>Nochmal versuchen</button>
