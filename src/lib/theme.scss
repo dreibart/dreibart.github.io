@@ -33,6 +33,12 @@ a[aria-disabled=true] {
 img.character-image {
     height: 3rem;
     width: 3rem;
+
+    min-height: 3rem;
+    max-height: 3rem;
+    min-width: 3rem;
+    max-width: 3rem;
+
     overflow: hidden;
     background-color: var(--pico-primary);
     object-fit: cover;

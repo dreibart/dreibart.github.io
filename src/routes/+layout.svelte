@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { OnBlockingChanged, requestFromBackend, retryBlocking, type Result } from '$lib/network/backend';
+	import {
+		OnBlockingChanged,
+		requestFromBackend,
+		retryBlocking,
+		type Result
+	} from '$lib/network/backend';
 	import '$lib/theme.scss';
 	import { onMount, onDestroy } from 'svelte';
 	import { delay } from '$lib/misc';
@@ -114,9 +119,10 @@
 </script>
 
 {#if popUpBlocker}
-	<dialog open>Bitte deaktivieren Sie ihren Popup Blocker
-        <button onclick={()=>retryBlocking()}>Nochmal versuchen</button>
-    </dialog>
+	<dialog open>
+		Bitte deaktivieren Sie ihren Popup Blocker
+		<button onclick={() => retryBlocking()}>Nochmal versuchen</button>
+	</dialog>
 {/if}
 {#if loaded}
 	<main class="container">
@@ -153,7 +159,7 @@
 					<hgroup>
 						<img
 							class="character-image"
-							src={character.content.characterPicture}
+							src="https://dreibart.de/rpgdb/image.php?character={characterId}"
 							alt="Character Bild"
 						/>
 						<h1>

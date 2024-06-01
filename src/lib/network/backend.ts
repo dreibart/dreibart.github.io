@@ -445,7 +445,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
         const data = parameters[key];
         const symbol: sympolData | null = type.includes('|')
             ? { type: 'enum', values: type.split('|') }
-            : type == 'string'
+            : type == 'string' || type == 'number'
                 ? { type }
                 : null;
         if (symbol == null) {
@@ -550,7 +550,8 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
             return error;
         }
     });
-    const resultsWithoutErrors = results.filter(x => !(x instanceof TypeError));
+    const resultsWithoutErrors = results.filter(x => !(x instanceof TypeError) && !(x instanceof Error));
+    
     if (resultsWithoutErrors.length == 0) {
 
         const errors = results.filter((x): x is TypeError => x instanceof TypeError);
@@ -558,10 +559,10 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
             throw errors;
         }
 
-        throw new Error(`Response could not be parsed to expected types.\n\tResponse: ${text}\n\t${currentData.result.map(x => "Expected: " + JSON.stringify(x)).join('\n\t')}`);
+        throw results;
     }
-    if (results.length > 1) {
+    if (resultsWithoutErrors.length > 1) {
         console.warn(`Result ${text} was ambigious`);
     }
-    return results[0] as any;
+    return resultsWithoutErrors[0] as any;
 }
