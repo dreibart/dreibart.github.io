@@ -44,10 +44,42 @@ const errorSymbol = {
     }
 } as const satisfies sympolData;
 const api = {
-    '/character': {
+    '/character/list': {
         'GET': {
             result: [{
-                type: 'string'
+                type: 'object',
+                properties: {
+                    typ: {
+                        type: 'enum',
+                        values: ['characterList']
+                    },
+                    characters: {
+                        type: 'array',
+                        valueType: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'number' },
+                                name: { type: 'string' },
+                                type: { type: 'string' },
+                                world: { type: 'string' },
+                                "attribute-points": {
+                                    type: 'object',
+                                    properties: {
+                                        "used": { type: 'number' },
+                                        "available": { type: 'number' },
+                                    }
+                                },
+                                "skill-points": {
+                                    type: 'object',
+                                    properties: {
+                                        "used": { type: 'number' },
+                                        "available": { type: 'number' },
+                                    }
+                                },
+                            }
+                        }
+                    }
+                }
             }]
         }
     },
@@ -144,6 +176,8 @@ type ResultType<T> =
         ? number
         : T extends { type: 'enum' }
         ? T['values'][number]
+        : T extends { type: 'array' }
+        ? ResultType<T['valueType']>[]
         : T extends { type: 'object' }
         ? {
             [p in keyof T['properties']]: ResultType<T['properties'][p]>
