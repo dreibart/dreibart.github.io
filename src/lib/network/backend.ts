@@ -243,10 +243,10 @@ type UndefinableToOptional<Input> = Omit<Input, keyof UndefinedKeys<Input>> & Un
 
 
 function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj is ResultType<TSymbol> {
-    if (symbol.optional == true && obj === undefined) {
+    if (symbol.optional == true && (obj === undefined || obj === null)) {
         return true;
     }
-    if (symbol.type == 'string' && (typeof obj == 'string' || typeof obj == 'number')) {// hack remove number
+    if (symbol.type == 'string' && (typeof obj == 'string')) {
         return true;
     }
     if (symbol.type == 'number' && typeof obj == 'number') {
@@ -338,7 +338,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
         const data = parameters[key];
         const symbol: sympolData | null = type.includes('|')
             ? { type: 'enum', values: type.split('|') }
-            : type == 'string' || type == 'number'
+            : type == 'string'
                 ? { type }
                 : null;
         if (symbol == null) {

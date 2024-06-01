@@ -17,24 +17,6 @@
 		data.push(...list.characters.map((c) => c));
 
 		loadingCharacters = false;
-		return;
-
-		for (let index = 0; index < 1100; index += step) {
-			const characters = await Promise.all(
-				Array.from({ length: step }).map(async (_, i) => {
-					try {
-						const data = await requestFromBackend('/character/{id:number}', 'GET', {
-							id: index + i
-						});
-						return { ...data, id: index + i };
-					} catch (error) {
-						// console.warn(error);
-						return { typ: 'error', description: error };
-					}
-				})
-			);
-		}
-		loadingCharacters = false;
 	});
 	function faildLoadImage(
 		e: Event & {
@@ -48,10 +30,19 @@
 
 <h1 aria-busy={loadingCharacters}>Charactere</h1>
 <table>
+	<thead>
+		<tr>
+			<th></th>
+			<th>Name</th>
+			<th>Attributpunkte</th>
+			<th>Fertigkeitspunkte</th>
+			<th></th>
+		</tr>
+	</thead>
 	<tbody>
 		{#each distinct(...data.map((x) => x.world)).sort() as w}
 			<tr>
-				<td colspan="3"><strong>{w}</strong></td>
+				<td colspan="5"><strong>{w}</strong></td>
 			</tr>
 			{#each data.filter((x) => x.world == w) as c}
 				<tr>
@@ -64,6 +55,20 @@
 						/></td
 					>
 					<td style="display: grid;"><span>{c.name}</span><em>{c.world}</em></td>
+					<td
+						>{c['attribute-points'].used} / {c['attribute-points'].available +
+							c['attribute-points'].used}<br />
+						<small>
+							(verfügbar {c['attribute-points'].available})
+						</small>
+					</td>
+					<td
+						>{c['skill-points'].used} / {c['skill-points'].available + c['skill-points'].used}
+						<br />
+						<small>
+							(verfügbar {c['skill-points'].available})
+						</small>
+					</td>
 					<td style="width: 0;"><a href="?character-id={c.id}">Auswählen…</a></td>
 				</tr>
 			{/each}
