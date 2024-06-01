@@ -52,7 +52,7 @@ const api = {
                         valueType: {
                             type: 'object',
                             properties: {
-                                id: { type: 'string' },
+                                id: { type: 'number' },
                                 name: { type: 'string' },
                                 type: { type: 'string' },
                                 world: { type: 'string' },
