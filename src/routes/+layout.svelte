@@ -120,8 +120,10 @@
 
 {#if popUpBlocker}
 	<dialog open>
-		Bitte deaktivieren Sie ihren Popup Blocker
-		<button onclick={() => retryBlocking()}>Nochmal versuchen</button>
+		<p>Bitte deaktivieren Sie ihren Popup Blocker</p>
+		<div>
+			<button onclick={() => retryBlocking()}>Nochmal versuchen</button>
+		</div>
 	</dialog>
 {/if}
 {#if loaded}
