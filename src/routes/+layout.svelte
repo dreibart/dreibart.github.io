@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { requestFromBackend, type Result } from '$lib/network/backend';
+	import { OnBlockingChanged, requestFromBackend, retryBlocking, type Result } from '$lib/network/backend';
 	import '$lib/theme.scss';
 	import { onMount, onDestroy } from 'svelte';
 	import { delay } from '$lib/misc';
@@ -16,9 +16,15 @@
 		$state();
 	let observer: MutationObserver;
 
+	let popUpBlocker = $state(false);
+
 	onMount(async () => {
 		const token = $page.url.searchParams.get('apitoken');
 		console.log('cehck for token', token);
+		OnBlockingChanged((e) => {
+			popUpBlocker = e.isBlocking;
+		});
+
 		if (token !== null) {
 			window.localStorage.setItem('token', token);
 			close();
@@ -39,15 +45,17 @@
 
 			const charString = $page.url.searchParams.get('character-id');
 			if (charString) {
-				characterId = parseInt(charString);
-				const loaded = await requestFromBackend('/character/{id:number}', 'GET', {
-					id: characterId
-				});
-				if (loaded.typ == 'character') {
-					character = loaded;
-				} else {
-					characterId = undefined;
-				}
+				try {
+					characterId = parseInt(charString);
+					const loaded = await requestFromBackend('/character/{id:number}', 'GET', {
+						id: characterId
+					});
+					if (loaded.typ == 'character') {
+						character = loaded;
+					} else {
+						characterId = undefined;
+					}
+				} catch (error) {}
 			}
 
 			// scrollbar calculation
@@ -105,6 +113,11 @@
 	});
 </script>
 
+{#if popUpBlocker}
+	<dialog open>Bitte deaktivieren Sie ihren Popup Blocker
+        <button onclick={()=>retryBlocking()}>Nochmal versuchen</button>
+    </dialog>
+{/if}
 {#if loaded}
 	<main class="container">
 		<slot></slot>
@@ -128,7 +141,7 @@
 							return false;
 						}
 						showSubMenue = false;
-					}}>FernkampfTool</a
+					}}>Fernkampf Tool</a
 				>
 			</li>
 		</ul>
@@ -154,7 +167,7 @@
 			</li>
 		</ul>
 		<ul>
-			<li>
+			<li style="margin-right: var(--pico-nav-element-spacing-vertical);">
 				<Hamburger bind:isOpen={showSubMenue} />
 				<!-- <input type="checkbox" bind:checked={showSubMenue} /> -->
 			</li>

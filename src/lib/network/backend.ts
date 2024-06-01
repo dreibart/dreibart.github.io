@@ -250,6 +250,40 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
     }
     return false;
 }
+let isBlocking = false;
+const listener: ((e: { isBlocking: boolean }) => void)[] = [];
+export function OnBlockingChanged(ev: (e: { isBlocking: boolean }) => void) {
+    listener.push(ev);
+    ev({ isBlocking });
+}
+
+function setIsBlocking(params: boolean) {
+    if (isBlocking != params) {
+        isBlocking = params;
+        listener.forEach(l => l({ isBlocking }));
+    }
+}
+
+let blockingPromisde: {
+    set: () => void,
+    promise: Promise<void>
+};
+
+function initBlockingPromise() {
+    let set: () => void = undefined!;
+    const p = new Promise<void>((resolve) => {
+        set = resolve;
+    });
+    blockingPromisde = {
+        promise: p,
+        set,
+    };
+}
+initBlockingPromise();
+export function retryBlocking() {
+    blockingPromisde.set();
+    initBlockingPromise();
+}
 
 let tokenPromise: undefined | Promise<string>;
 export async function requestFromBackend<TPath extends Pathes, TMethod extends Method<TPath>>(path: TPath, method: TMethod, ...params: EmptyToVoid<UndefinableToOptional<RoutParams<TPath> & QueryParams<TPath, TMethod>>>): Promise<Result<TPath, TMethod>> {
@@ -309,14 +343,19 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
     let token = window.localStorage.getItem('token');
     if (token == null) {
         // todo : get token
-        const promise = tokenPromise = tokenPromise ?? new Promise<string>((resolve, reject) => {
+        // eslint-disable-next-line no-async-promise-executor
+        const promise = tokenPromise = tokenPromise ?? new Promise<string>(async (resolve, reject) => {
             const location = new URL(window.location.toString());
             location.search = '';
-            const dialog = window.open(`https://dreibart.de/rpgdb/apiLogin.php?target=${encodeURIComponent(location.toString())}`, '_blank', 'toolbar=0,menubar=0');
-            if (dialog == null) {
-                reject('No Window');
-                return;
+            let dialog = window.open(`https://dreibart.de/rpgdb/apiLogin.php?target=${encodeURIComponent(location.toString())}`, '_blank', 'toolbar=0,menubar=0');
+            while (dialog == null) {
+                setIsBlocking(true);
+                console.log('is blocking');
+                await blockingPromisde.promise;
+                dialog = window.open(`https://dreibart.de/rpgdb/apiLogin.php?target=${encodeURIComponent(location.toString())}`, '_blank', 'toolbar=0,menubar=0');
+
             }
+            setIsBlocking(false);
             const timer = setInterval(function () {
                 if (dialog.closed) {
                     clearInterval(timer);
