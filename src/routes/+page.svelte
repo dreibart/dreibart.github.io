@@ -7,15 +7,17 @@
 	let data: Result<'/character/list', 'GET'>['characters'][number][] = $state([]);
 
 	let loadingCharacters = $state(false);
-
+	let errorLoadingCharacters = $state(false);
 	onMount(async () => {
-		const step = 50;
 		loadingCharacters = true;
 
-		const list = await requestFromBackend('/character/list', 'GET');
-
-		data.push(...list.characters.map((c) => c));
-
+		try {
+			const list = await requestFromBackend('/character/list', 'GET');
+			data.push(...list.characters.map((c) => c));
+		} catch (error) {
+			errorLoadingCharacters = true;
+			console.error('fehler beim laden der Charactere', error);
+		}
 		loadingCharacters = false;
 	});
 	function faildLoadImage(
@@ -28,6 +30,9 @@
 	}
 </script>
 
+{#if errorLoadingCharacters}
+	<dialog open>Fehler beim abfragen der Charactere.</dialog>
+{/if}
 <h1 aria-busy={loadingCharacters}>Charactere</h1>
 <table>
 	<thead>

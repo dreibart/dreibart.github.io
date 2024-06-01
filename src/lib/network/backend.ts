@@ -1,11 +1,5 @@
 
 
-
-const symbolString = Symbol('string');
-const symbolNumber = Symbol('number');
-const symbolStringOptional = Symbol('string?');
-const symbolNumberOptional = Symbol('number?');
-
 const methods = ['GET', 'POST', 'PUT', 'DELETE'] as const;
 
 type sympolData = ({
@@ -58,7 +52,7 @@ const api = {
                         valueType: {
                             type: 'object',
                             properties: {
-                                id: { type: 'number' },
+                                id: { type: 'string' },
                                 name: { type: 'string' },
                                 type: { type: 'string' },
                                 world: { type: 'string' },
@@ -242,7 +236,47 @@ type UndefinedKeys<Input> = {
 type UndefinableToOptional<Input> = Omit<Input, keyof UndefinedKeys<Input>> & UndefinedKeys<Input>
 
 
+type TypeErrorType = {
+    type: 'to many tuple elements' | 'missing property' | 'missing tuple element' | 'wrong type',
+    expected: sympolData | undefined,
+    actual: unknown,
+    path: string[],
+};
+
+class TypeError {
+
+    private readonly _errors: TypeErrorType[];
+
+    constructor(...errors: TypeErrorType[]) {
+        this._errors = errors;
+    }
+
+
+    public get errors(): TypeErrorType[] {
+        return this._errors;
+    }
+
+
+    /**
+     * withErrors
+     */
+    public withErrors(...errors: TypeErrorType[]) {
+        return new TypeError(...this._errors, ...errors);
+    }
+}
+
 function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj is ResultType<TSymbol> {
+    try {
+        assert(symbol, obj);
+        return true;
+    } catch (error) {
+        if (error instanceof TypeError) {
+            return false;
+        }
+        throw error;
+    }
+}
+function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path: string[] = []): obj is ResultType<TSymbol> {
     if (symbol.optional == true && (obj === undefined || obj === null)) {
         return true;
     }
@@ -256,33 +290,106 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
         return true;
     }
     if (symbol.type == 'object' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
-        return Object.entries(symbol.properties).every(([key, property]) => {
-            const value = (obj as Record<string, unknown>)[key];
-            return check(property, value);
+        let lengthErrors: TypeError = new TypeError();
+        Object.entries(symbol.properties).forEach(([key, property]) => {
+            try {
+                const value = (obj as Record<string, unknown>)[key];
+                return assert(property, value, [...path, key]);
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    lengthErrors = lengthErrors.withErrors(...error.errors);
+                } else {
+                    throw error;
+                }
+            }
         });
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return true;
     }
     if (symbol.type == 'record' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
-        return Object.keys(obj).every((key) => {
-            const value = (obj as Record<string, unknown>)[key];
-            return check(symbol.valueType, value);
+        let lengthErrors: TypeError = new TypeError();
+        Object.keys(obj).forEach((key) => {
+            try {
+                const value = (obj as Record<string, unknown>)[key];
+                return assert(symbol.valueType, value, [...path, key]);
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    lengthErrors = lengthErrors.withErrors(...error.errors);
+                } else {
+                    throw error;
+                }
+            }
         });
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return true;
     }
     if (symbol.type == 'array' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
-        return obj.every((element) => {
-            return check(symbol.valueType, element);
+        let lengthErrors: TypeError = new TypeError();
+        obj.forEach((element, i) => {
+            try {
+                return assert(symbol.valueType, element, [...path, `[${i}]`]);
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    lengthErrors = lengthErrors.withErrors(...error.errors);
+                } else {
+                    throw error;
+                }
+            }
         });
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return true;
     }
     if (symbol.type == 'tuple' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
+        let lengthErrors: TypeError = new TypeError();
         if (obj.length > symbol.valueTypes.length) {
-            return false;
+            lengthErrors = lengthErrors.withErrors(...Array.from({ length: obj.length - symbol.valueTypes.length }).map((_, i) => ({
+                type: 'to many tuple elements',
+                expected: undefined,
+                actual: obj[i + symbol.valueTypes.length],
+                path: [...path, `[${i + symbol.valueTypes.length}]`],
+            } satisfies TypeErrorType)));
         }
 
-        symbol.valueTypes.every((prop, i) => {
+        symbol.valueTypes.forEach((prop, i) => {
             const v = obj[i];
-            return check(prop, v);
+            if (v == undefined) {
+                lengthErrors = lengthErrors.withErrors({
+                    type: 'missing tuple element',
+                    actual: undefined,
+                    expected: prop,
+                    path: [...path, `[${i}]`]
+                });
+            } else {
+                try {
+                    return assert(prop, v, [...path, `[${i}]`]);
+
+                } catch (error) {
+                    if (error instanceof TypeError) {
+                        lengthErrors = lengthErrors.withErrors(...error.errors);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
         });
+
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return true;
     }
-    return false;
+    throw new TypeError({
+        type: 'wrong type',
+        expected: symbol,
+        actual: obj,
+        path: [...path],
+    });
 }
 let isBlocking = false;
 const listener: ((e: { isBlocking: boolean }) => void)[] = [];
@@ -344,7 +451,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
         if (symbol == null) {
             throw new Error(`Unknown TYPE ${type} for rout parameter`);
         }
-        if (!check(symbol, data)) {
+        if (!assert(symbol, data)) {
             throw new Error(`Vaule ${JSON.stringify(data)} dose not satisfy type ${JSON.stringify(symbol)} for part ${key}`);
         }
         request = request.replace(sequence, data.toString());
@@ -424,7 +531,6 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
 
     const text = await response.text();
 
-    const error = Symbol('error');
     const results = currentData.result.map(r => {
         try {
 
@@ -434,17 +540,24 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
                 return parseFloat(text);
             } else {
                 const json = JSON.parse(text);
-                if (check(r, json)) {
+                if (assert(r, json)) {
                     return json;
                 } else {
-                    return error;
+                    return new Error('assert should throw instead of returning false');
                 }
             }
-        } catch {
+        } catch (error) {
             return error;
         }
-    }).filter(x => x !== error);
-    if (results.length == 0) {
+    });
+    const resultsWithoutErrors = results.filter(x => !(x instanceof TypeError));
+    if (resultsWithoutErrors.length == 0) {
+
+        const errors = results.filter((x): x is TypeError => x instanceof TypeError);
+        if (errors.length > 0) {
+            throw errors;
+        }
+
         throw new Error(`Response could not be parsed to expected types.\n\tResponse: ${text}\n\t${currentData.result.map(x => "Expected: " + JSON.stringify(x)).join('\n\t')}`);
     }
     if (results.length > 1) {
