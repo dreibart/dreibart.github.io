@@ -13,7 +13,10 @@
 
 		try {
 			const list = await requestFromBackend('/character/list', 'GET');
-			data.push(...list.characters.map((c) => c));
+			data.push(
+				...list.characters
+				// .map((c) => ({...c,  world:'' }))
+			);
 		} catch (error) {
 			errorLoadingCharacters = true;
 			console.error('fehler beim laden der Charactere', error);
@@ -59,7 +62,7 @@
 							alt="Charakter Bild"
 						/></td
 					>
-					<td style="display: grid;"><span>{c.name}</span><em>{c.world}</em></td>
+					<td><span>{c.name}</span></td>
 					<td
 						>{c['attribute-points'].used} / {c['attribute-points'].available +
 							c['attribute-points'].used}<br />
