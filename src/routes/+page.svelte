@@ -96,7 +96,7 @@
 						><img
 							onerror={faildLoadImage}
 							class="character-image"
-							src={c.content.characterPicture}
+							src="https://dreibart.de/rpgdb/image.php?character={c.id}"
 							alt="Charakter Bild"
 						/></td
 					>
