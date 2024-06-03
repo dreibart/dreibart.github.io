@@ -326,7 +326,7 @@
 					error = undefined;
 					character = char;
 				}
-			}else{
+			} else {
 				goto(`${base}/`);
 			}
 		} catch (errorReason) {
@@ -347,8 +347,8 @@
 		const result = await requestFromBackend('/shootSkill/request', 'GET', {
 			character: charactieId
 		});
-
-		return result;
+		if (result.success) return result.result;
+		return result.error;
 		// const result = await fetch(
 		// 	`https://dreibart.de/rpgdb/restAPI.php/shootSkill/request?character=${charactieId}`,
 		// 	{
@@ -568,7 +568,6 @@
 {/if}
 
 <style lang="scss">
-	
 	input[type='number'] {
 		width: min-content;
 	}

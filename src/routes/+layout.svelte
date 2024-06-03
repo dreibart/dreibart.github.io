@@ -1,3 +1,19 @@
+<script lang="ts" context="module">
+	export function characterIdFromPage(params: Page<Record<string, string>, string | null>) {
+		const charString = get(page).url.searchParams.get('character-id');
+		let characterId: number | undefined;
+		if (charString) {
+			try {
+				characterId = parseInt(charString);
+				if (isNaN(characterId)) {
+					characterId = undefined;
+				}
+			} catch (error) {}
+		}
+		return characterId;
+	}
+</script>
+
 <script lang="ts">
 	import { page } from '$app/stores';
 	import {
@@ -12,6 +28,8 @@
 	import Hamburger from '$lib/hamburger.svelte';
 	import { browser } from '$app/environment';
 	import { base } from '$app/paths';
+	import type { Page } from '@sveltejs/kit';
+	import { get } from 'svelte/store';
 
 	let showSubMenue = $state(false);
 	let loaded = $state(false);
@@ -23,6 +41,52 @@
 
 	let popUpBlocker = $state(false);
 
+	/**
+	 * Get current browser viewpane heigtht
+	 */
+
+	function getScrollPercent() {
+		function _get_window_height() {
+			return (
+				window.innerHeight ||
+				document.documentElement.clientHeight ||
+				document.body.clientHeight ||
+				0
+			);
+		}
+
+		/**
+		 * Get current absolute window scroll position
+		 */
+		function _get_window_Yscroll() {
+			return (
+				window.pageYOffset || document.body.scrollTop || document.documentElement.scrollTop || 0
+			);
+		}
+
+		/**
+		 * Get current absolute document height
+		 */
+		function _get_doc_height() {
+			return Math.max(
+				document.body.scrollHeight || 0,
+				document.documentElement.scrollHeight || 0,
+				document.body.offsetHeight || 0,
+				document.documentElement.offsetHeight || 0,
+				document.body.clientHeight || 0,
+				document.documentElement.clientHeight || 0
+			);
+		}
+
+		/**
+		 * Get current vertical scroll percentage
+		 */
+		function _get_scroll_percentage() {
+			return (_get_window_Yscroll() + _get_window_height()) / _get_doc_height();
+		}
+
+		return _get_scroll_percentage();
+	}
 	onMount(async () => {
 		const token = $page.url.searchParams.get('apitoken');
 		console.log('cehck for token', token);
@@ -39,6 +103,8 @@
 			};
 			calculateScrollPosition();
 			function calculateScrollPosition() {
+				scrollPosition = getScrollPercent();
+				return;
 				const hight = document.body.scrollHeight - (window.visualViewport?.height ?? 1) + 103;
 				if (hight <= 0) {
 					scrollPosition = 1;
@@ -55,8 +121,8 @@
 					const loaded = await requestFromBackend('/character/{id:number}', 'GET', {
 						id: characterId
 					});
-					if (loaded.typ == 'character') {
-						character = loaded;
+					if (loaded.success && loaded.result.typ == 'character') {
+						character = loaded.result;
 					} else {
 						characterId = undefined;
 					}
@@ -103,8 +169,8 @@
 				requestFromBackend('/character/{id:number}', 'GET', {
 					id: characterId
 				}).then((loaded) => {
-					if (loaded.typ == 'character') {
-						character = loaded;
+					if (loaded.success && loaded.result.typ == 'character') {
+						character = loaded.result;
 					} else {
 						characterId = undefined;
 					}
@@ -152,9 +218,25 @@
 					}}>Fernkampf Tool</a
 				>
 			</li>
+			<li>
+				<a
+					aria-disabled={characterId == undefined}
+					href={characterId ? `${base}/character/notes/?character-id=${characterId}` : undefined}
+					onclick={() => {
+						if (!characterId) {
+							return false;
+						}
+						showSubMenue = false;
+					}}>Notizen</a
+				>
+			</li>
 		</ul>
 	</nav>
-	<nav class="bar" class:scrolled={scrollPosition != 1} style="--scroll-position:{scrollPosition}">
+	<nav
+		class="bar"
+		class:scrolled={scrollPosition < 0.99}
+		style="--scroll-position:{scrollPosition}"
+	>
 		<ul>
 			<li>
 				{#if character}
@@ -199,7 +281,7 @@
 			width: calc(3 * var(--modifier));
 			padding: calc(var(--modifier)) calc(var(--modifier));
 			border: 1px solid var(--pico-primary);
-			backdrop-filter: blur(5px) grayscale(100%);
+			backdrop-filter: blur(5px) grayscale(100%) brightness(40%);
 		}
 		display: block;
 
@@ -241,12 +323,13 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
-		transition: 1s border-top-color;
+		transition: 1s all;
 		// background-color: rgba(var(--pico-background-color),  1.7) ;
-		backdrop-filter: blur(10px);
+		backdrop-filter: blur(0) brightness(100%);
 		border-top: 1px transparent solid;
 		&.scrolled {
 			border-top: 1px var(--pico-primary) solid;
+			backdrop-filter: blur(10px) brightness(40%);
 			// opacity: 0.8;
 			// background-color: rgba(  var(--pico-background-color), 0.8);
 		}
@@ -266,6 +349,7 @@
 			grid-area: h2;
 		}
 		img {
+			align-self: center;
 			grid-area: img;
 			margin-right: 0.5rem;
 			margin-left: var(--pico-nav-element-spacing-vertical);

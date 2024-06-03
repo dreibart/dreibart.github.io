@@ -1,4 +1,6 @@
-@use "@picocss/pico";
+@use "@picocss/pico/scss" with ($theme-color: "jade"
+
+);
 
 
 
@@ -43,4 +45,5 @@ img.character-image {
     background-color: var(--pico-primary);
     object-fit: cover;
     border-radius: 3rem;
+
 }

@@ -1,12 +1,16 @@
+import * as luxon from 'luxon';
+import { base64 } from 'rfc4648';
 
-
-const methods = ['GET', 'POST', 'PUT', 'DELETE'] as const;
+const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
 
 type sympolData = ({
-    type: 'string' | 'number'
+    type: 'string' | 'number' | 'date-only' | 'date-time' | 'bytes' | 'null'
 } | {
     type: 'object'
     properties: Record<string, sympolData>
+} | {
+    type: 'one-off'
+    select: readonly sympolData[]
 } | {
     type: 'enum'
     values: readonly string[]
@@ -29,6 +33,7 @@ type ApiData = {
         optional?: false;
         properties: Record<string, sympolData & { type: 'string' | 'number' }>
     };
+    body?: sympolData,
     result: sympolData[];
 };
 const errorSymbol = {
@@ -116,6 +121,85 @@ const api = {
         }
     },
 
+    '/character/{id:number}/neu': {
+        'GET': {
+            result: [{
+                type: 'object',
+                properties: {
+                    "type": { type: 'enum', values: ['character'] },
+                    "id": { type: 'number' },
+                    "name": { type: 'number' },
+                    "world": {
+                        type: 'object',
+                        properties: {
+                            "id": { type: 'number' },
+                            "name": { type: 'string' },
+                        }
+                    },
+                    "category": { "type": 'string' },
+                    "age": { "type": 'number' },
+                    "gender": {
+                        "type": 'enum',
+                        values: ['male', 'female', 'other']
+                    },
+                    "size": { type: "number" },
+                    "weight": { type: "number" },
+                    "alignment": { type: "string" },
+                    "race": {
+                        type: 'object',
+                        properties: {
+                            "id": { type: 'number' },
+                            "name": { type: 'string' },
+                        }
+                    },
+                    "impediment": { type: 'number' },
+                    "magic-resistance": {
+                        type: 'object',
+                        properties: {
+                            "current": { type: 'number' },
+                            "maximum": { type: 'number' },
+                        }
+                    },
+                    "passive-defense": {
+                        type: 'object',
+                        properties: {
+                            "current": { type: 'number' },
+                            "maximum": { type: 'number' },
+                        }
+                    },
+                    "pools": {
+                        type: 'object',
+                        properties: {
+                            "fatique": { type: 'number' },
+                            "conzentration": { type: 'number' },
+                            "nana": { type: 'number' },
+                            "contact": { type: 'number' },
+                        }
+                    },
+                    "points": {
+                        type: 'object',
+                        "properties": {
+                            attrbute: {
+                                type: 'object',
+                                properties: {
+                                    used: { type: 'number' },
+                                    available: { type: 'number' },
+                                }
+                            },
+                            skill: {
+                                type: 'object',
+                                properties: {
+                                    used: { type: 'number' },
+                                    available: { type: 'number' },
+                                }
+                            }
+                        }
+                    }
+                }
+            }]
+        }
+
+    },
     '/character/{id:number}': {
         'GET': {
             result: [errorSymbol,
@@ -149,7 +233,105 @@ const api = {
                 },
             ]
         }
-    }
+    },
+
+    '/character/{id:number}/notes': {
+        'GET': {
+            result: [{
+                type: 'object',
+                properties: {
+                    type: {
+                        type: 'enum',
+                        values: ['notes']
+                    },
+                    notes: {
+                        type: 'array',
+                        valueType: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'number' },
+                                text: { type: 'string' },
+                                created: { type: 'date-time' },
+                                image: {
+                                    type: 'number',
+                                    optional: true,
+                                }
+                            }
+                        }
+                    }
+                }
+            }]
+        },
+        'PATCH': {
+            body: {
+                type: 'object',
+                properties: {
+                    text: { type: 'string' },
+                    image: {
+                        type: 'bytes',
+                        optional: true,
+                    }
+                }
+            },
+            result: [{
+                type: 'object',
+                properties: {
+                    type: { type: 'enum', values: ['note'] },
+                    id: { type: 'number' },
+                    text: { type: 'string' },
+                    created: { type: 'date-time' },
+                    image: {
+                        type: 'number',
+                        optional: true,
+                    }
+                }
+            }]
+        }
+    },
+    '/character/{id:number}/notes/{note_id:number}': {
+        'DELETE': {
+            result: [{
+                type: 'enum',
+                values: ['succsess']
+            }]
+        },
+        "PATCH": {
+            body: {
+                type: 'object',
+                properties: {
+                    text: {
+                        type: 'one-off',
+                        select: [
+                            { type: 'string' },
+                            { type: 'null' },
+                        ],
+                        optional: true,
+                    },
+                    image: {
+                        type: 'one-off',
+                        select: [
+                            { type: 'bytes' },
+                            { type: 'null' },
+                        ],
+                        optional: true,
+                    }
+                }
+            },
+            result: [{
+                type: 'object',
+                properties: {
+                    type: { type: 'enum', values: ['note'] },
+                    id: { type: 'number' },
+                    text: { type: 'string' },
+                    created: { type: 'date-time' },
+                    image: {
+                        type: 'number',
+                        optional: true,
+                    }
+                }
+            }]
+        }
+    },
 } as const satisfies Record<string, Partial<Record<typeof methods[number], ApiData>>>;
 
 
@@ -168,8 +350,20 @@ type ResultType<T> =
         ? string
         : T['type'] extends 'number'
         ? number
+        : T['type'] extends 'date-only'
+        ? luxon.DateTime
+        : T['type'] extends 'date-time'
+        ? luxon.DateTime
+        : T['type'] extends 'bytes'
+        ? Uint8Array
+        : T['type'] extends 'null'
+        ? null
         : T extends { type: 'enum' }
         ? T['values'][number]
+        : T extends { type: 'one-off' }
+        ? { [k in keyof T['select']]: ResultType<T['select'][k]> }[number]
+        : T extends { type: 'tuple' }
+        ? { [k in keyof T['valueTypes']]: ResultType<T['valueTypes'][k]> }
         : T extends { type: 'array' }
         ? ResultType<T['valueType']>[]
         : T extends { type: 'object' }
@@ -198,6 +392,11 @@ export type Result<TPath extends Pathes, TMethod extends Method<TPath>> =
 
 type QueryParams<TPath extends Pathes, TMethod extends Method<TPath>> =
     typeof api[TPath][TMethod] extends { 'query': infer K }
+    ? ResultType<K>
+    : {};
+
+type BodyParams<TPath extends Pathes, TMethod extends Method<TPath>> =
+    typeof api[TPath][TMethod] extends { 'body': infer K }
     ? ResultType<K>
     : {};
 
@@ -237,11 +436,17 @@ type UndefinableToOptional<Input> = Omit<Input, keyof UndefinedKeys<Input>> & Un
 
 
 type TypeErrorType = {
+    path: string[],
+    actual: unknown,
+} & ({
     type: 'to many tuple elements' | 'missing property' | 'missing tuple element' | 'wrong type',
     expected: sympolData | undefined,
     actual: unknown,
-    path: string[],
-};
+} | {
+    type: 'invalid datetime'
+    reason: string,
+    actual: luxon.DateTime<false>,
+});
 
 class TypeError {
 
@@ -276,62 +481,106 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
         throw error;
     }
 }
-function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path: string[] = []): obj is ResultType<TSymbol> {
-    if (symbol.optional == true && (obj === undefined || obj === null)) {
-        return true;
+
+
+
+function fromJsonObject<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path: string[] = []): ResultType<TSymbol> {
+    if (symbol.optional == true && obj === undefined) {
+        return undefined!;
     }
+    if (symbol.type == 'null' && (obj === null)) {
+        return null!;
+    }
+
     if (symbol.type == 'string' && (typeof obj == 'string')) {
-        return true;
+        return obj as ResultType<TSymbol>;
     }
     if (symbol.type == 'number' && typeof obj == 'number') {
-        return true;
+        return obj as ResultType<TSymbol>;
     }
     if (symbol.type == 'enum' && symbol.values.includes(obj as string)) {
-        return true;
+        return obj as ResultType<TSymbol>;
+    }
+
+    if (symbol.type == 'date-time' && typeof obj == 'string' && luxon.DateTime.fromISO(obj as string).isValid) {
+        return luxon.DateTime.fromISO(obj as string) as ResultType<TSymbol>;
+    }
+
+    if (symbol.type == 'date-only' && typeof obj == 'string' && luxon.DateTime.fromISO(obj as string).isValid) {
+        return luxon.DateTime.fromISO(obj as string) as ResultType<TSymbol>;
+    }
+
+    if (symbol.type == 'bytes' && typeof obj == 'string') {
+        return base64.parse(obj) as ResultType<TSymbol>;
+    }
+
+    if (symbol.type == 'one-off') {
+        const resultsUnfiltert = symbol.select.map(symbol => {
+            try {
+                return fromJsonObject(symbol, obj, [...path]);
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    return error;
+                }
+                throw error;
+            }
+        });
+
+        const errors = resultsUnfiltert.filter((x): x is TypeError => x instanceof TypeError);
+        const valids = resultsUnfiltert.filter((x): x is ResultType<TSymbol> => !(x instanceof TypeError));
+        if (valids.length > 0) {
+            if (valids.length > 1) {
+                console.warn("Parsing mas ambigious");
+            }
+            return valids[0];
+        }
+        throw errors.reduce((p, c) => p.withErrors(...c.errors), new TypeError());
     }
     if (symbol.type == 'object' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
         let lengthErrors: TypeError = new TypeError();
-        Object.entries(symbol.properties).forEach(([key, property]) => {
+        const result = Object.fromEntries(Object.entries(symbol.properties).map(([key, property]) => {
             try {
                 const value = (obj as Record<string, unknown>)[key];
-                return assert(property, value, [...path, key]);
+                return [key, fromJsonObject(property, value, [...path, key])] as const;
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
+                    return [key, null!];
                 } else {
                     throw error;
                 }
             }
-        });
+        }));
         if (lengthErrors.errors.length > 0) {
             throw lengthErrors;
         }
-        return true;
+        return result as ResultType<TSymbol>;
     }
     if (symbol.type == 'record' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
         let lengthErrors: TypeError = new TypeError();
-        Object.keys(obj).forEach((key) => {
+        const result = Object.fromEntries(Object.keys(obj).map((key) => {
             try {
                 const value = (obj as Record<string, unknown>)[key];
-                return assert(symbol.valueType, value, [...path, key]);
+                return [key, fromJsonObject(symbol.valueType, value, [...path, key])] as const;
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
+                    return [key, !null] as const;
                 } else {
                     throw error;
                 }
             }
-        });
+        }));
         if (lengthErrors.errors.length > 0) {
             throw lengthErrors;
         }
-        return true;
+        return result as ResultType<TSymbol>;
     }
     if (symbol.type == 'array' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
         let lengthErrors: TypeError = new TypeError();
-        obj.forEach((element, i) => {
+        const result = obj.map((element, i) => {
             try {
-                return assert(symbol.valueType, element, [...path, `[${i}]`]);
+                return fromJsonObject(symbol.valueType, element, [...path, `[${i}]`]);
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
@@ -343,7 +592,7 @@ function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path:
         if (lengthErrors.errors.length > 0) {
             throw lengthErrors;
         }
-        return true;
+        return result as ResultType<TSymbol>;
     }
     if (symbol.type == 'tuple' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
         let lengthErrors: TypeError = new TypeError();
@@ -356,7 +605,7 @@ function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path:
             } satisfies TypeErrorType)));
         }
 
-        symbol.valueTypes.forEach((prop, i) => {
+        const result = symbol.valueTypes.map((prop, i) => {
             const v = obj[i];
             if (v == undefined) {
                 lengthErrors = lengthErrors.withErrors({
@@ -367,7 +616,7 @@ function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path:
                 });
             } else {
                 try {
-                    return assert(prop, v, [...path, `[${i}]`]);
+                    return fromJsonObject(prop, v, [...path, `[${i}]`]);
 
                 } catch (error) {
                     if (error instanceof TypeError) {
@@ -382,7 +631,7 @@ function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path:
         if (lengthErrors.errors.length > 0) {
             throw lengthErrors;
         }
-        return true;
+        return result as ResultType<TSymbol>;
     }
     throw new TypeError({
         type: 'wrong type',
@@ -391,6 +640,338 @@ function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path:
         path: [...path],
     });
 }
+
+function toJsonObject<TSymbol extends sympolData>(symbol: TSymbol, obj: ResultType<TSymbol>, path: string[] = []): string | number | object {
+    if (symbol.optional == true && obj === undefined) {
+        return undefined!;
+    }
+    if (symbol.type == 'null' && (obj === null)) {
+        return null!;
+    }
+
+    if (symbol.type == 'string' && (typeof obj == 'string')) {
+        return obj;
+    }
+    if (symbol.type == 'number' && typeof obj == 'number') {
+        return obj;
+    }
+    if (symbol.type == 'enum' && typeof obj == 'string' && symbol.values.includes(obj as string)) {
+        return obj;
+    }
+
+    if (symbol.type == 'date-time' && luxon.DateTime.isDateTime(obj)) {
+        if (obj.isValid) {
+            return obj.toISO();
+        } else {
+
+            throw new TypeError({
+                type: 'invalid datetime',
+                actual: obj,
+                path: [...path],
+                reason: obj.invalidReason
+            });
+        }
+    }
+
+    if (symbol.type == 'date-only' && luxon.DateTime.isDateTime(obj)) {
+        if (obj.isValid) {
+            return obj.toISODate();
+        } else {
+            throw new TypeError({
+                type: 'invalid datetime',
+                actual: obj,
+                path: [...path],
+                reason: obj.invalidReason
+            });
+        }
+    }
+
+    if (symbol.type == 'bytes' && obj instanceof Uint8Array) {
+        return base64.stringify(obj);
+    }
+
+    if (symbol.type == 'one-off') {
+        const resultsUnfiltert = symbol.select.map(symbol => {
+            try {
+                return toJsonObject(symbol, obj, [...path]);
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    return error;
+                }
+                throw error;
+            }
+        });
+
+        const errors = resultsUnfiltert.filter((x): x is TypeError => x instanceof TypeError);
+        const valids = resultsUnfiltert.filter((x): x is string | number | object => !(x instanceof TypeError));
+        if (valids.length > 0) {
+            if (valids.length > 1) {
+                console.warn("Parsing mas ambigious");
+            }
+            return valids[0];
+        }
+        throw errors.reduce((p, c) => p.withErrors(...c.errors), new TypeError());
+    }
+    if (symbol.type == 'object' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
+        let lengthErrors: TypeError = new TypeError();
+        const result = Object.fromEntries(Object.entries(symbol.properties).map(([key, property]) => {
+            try {
+                const value = (obj as Record<string, unknown>)[key];
+                return [key, toJsonObject(property, value, [...path, key])] as const;
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    lengthErrors = lengthErrors.withErrors(...error.errors);
+                    return [key, null!];
+                } else {
+                    throw error;
+                }
+            }
+        }));
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return result;
+    }
+    if (symbol.type == 'record' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
+        let lengthErrors: TypeError = new TypeError();
+        const result = Object.fromEntries(Object.keys(obj).map((key) => {
+            try {
+                const value = (obj as Record<string, unknown>)[key];
+                return [key, toJsonObject(symbol.valueType, value, [...path, key])] as const;
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    lengthErrors = lengthErrors.withErrors(...error.errors);
+                    return [key, !null] as const;
+                } else {
+                    throw error;
+                }
+            }
+        }));
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return result;
+    }
+    if (symbol.type == 'array' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
+        let lengthErrors: TypeError = new TypeError();
+        const result = obj.map((element, i) => {
+            try {
+                return toJsonObject(symbol.valueType, element, [...path, `[${i}]`]);
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    lengthErrors = lengthErrors.withErrors(...error.errors);
+                } else {
+                    throw error;
+                }
+            }
+        });
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return result;
+    }
+    if (symbol.type == 'tuple' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
+        let lengthErrors: TypeError = new TypeError();
+        if (obj.length > symbol.valueTypes.length) {
+            lengthErrors = lengthErrors.withErrors(...Array.from({ length: obj.length - symbol.valueTypes.length }).map((_, i) => ({
+                type: 'to many tuple elements',
+                expected: undefined,
+                actual: obj[i + symbol.valueTypes.length],
+                path: [...path, `[${i + symbol.valueTypes.length}]`],
+            } satisfies TypeErrorType)));
+        }
+
+        const result = symbol.valueTypes.map((prop, i) => {
+            const v = obj[i];
+            if (v == undefined) {
+                lengthErrors = lengthErrors.withErrors({
+                    type: 'missing tuple element',
+                    actual: undefined,
+                    expected: prop,
+                    path: [...path, `[${i}]`]
+                });
+            } else {
+                try {
+                    return toJsonObject(prop, v, [...path, `[${i}]`]);
+
+                } catch (error) {
+                    if (error instanceof TypeError) {
+                        lengthErrors = lengthErrors.withErrors(...error.errors);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        });
+
+        if (lengthErrors.errors.length > 0) {
+            throw lengthErrors;
+        }
+        return result;
+    }
+    throw new TypeError({
+        type: 'wrong type',
+        expected: symbol,
+        actual: obj,
+        path: [...path],
+    });
+}
+// function assert<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown, path: string[] = []): ResultType<TSymbol> {
+//     if (symbol.optional == true && obj === undefined) {
+//         return undefined!;
+//     }
+//     if (symbol.type == 'null' && (obj === null)) {
+//         return null!;
+//     }
+
+//     if (symbol.type == 'string' && (typeof obj == 'string')) {
+//         return obj as ResultType<TSymbol>;
+//     }
+//     if (symbol.type == 'number' && typeof obj == 'number') {
+//         return obj as ResultType<TSymbol>;
+//     }
+//     if (symbol.type == 'enum' && symbol.values.includes(obj as string)) {
+//         return obj as ResultType<TSymbol>;
+//     }
+
+//     if (symbol.type == 'date-time' && typeof obj == 'string' && luxon.DateTime.fromISO(obj as string).isValid) {
+//         return luxon.DateTime.fromISO(obj as string) as ResultType<TSymbol>;
+//     }
+
+//     if (symbol.type == 'date-only' && typeof obj == 'string' && luxon.DateTime.fromISO(obj as string).isValid) {
+//         return luxon.DateTime.fromISO(obj as string) as ResultType<TSymbol>;
+//     }
+
+//     if (symbol.type == 'bytes' && typeof obj == 'string') {
+//         return base64.parse(obj) as ResultType<TSymbol>;
+//     }
+
+//     if (symbol.type == 'one-off') {
+//         const resultsUnfiltert = symbol.select.map(symbol => {
+//             try {
+//                 return assert(symbol, obj, [...path]);
+//             } catch (error) {
+//                 if (error instanceof TypeError) {
+//                     return error;
+//                 }
+//                 throw error;
+//             }
+//         });
+
+//         const errors = resultsUnfiltert.filter((x): x is TypeError => x instanceof TypeError);
+//         const valids = resultsUnfiltert.filter((x): x is ResultType<TSymbol> => !(x instanceof TypeError));
+//         if (valids.length > 0) {
+//             if (valids.length > 1) {
+//                 console.warn("Parsing mas ambigious");
+//             }
+//             return valids[0];
+//         }
+//         throw errors.reduce((p, c) => p.withErrors(...c.errors), new TypeError());
+//     }
+//     if (symbol.type == 'object' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
+//         let lengthErrors: TypeError = new TypeError();
+//         const result = Object.fromEntries(Object.entries(symbol.properties).map(([key, property]) => {
+//             try {
+//                 const value = (obj as Record<string, unknown>)[key];
+//                 return [key, assert(property, value, [...path, key])] as const;
+//             } catch (error) {
+//                 if (error instanceof TypeError) {
+//                     lengthErrors = lengthErrors.withErrors(...error.errors);
+//                     return [key, null!];
+//                 } else {
+//                     throw error;
+//                 }
+//             }
+//         }));
+//         if (lengthErrors.errors.length > 0) {
+//             throw lengthErrors;
+//         }
+//         return result as ResultType<TSymbol>;
+//     }
+//     if (symbol.type == 'record' && typeof obj == 'object' && obj !== null && !Array.isArray(obj)) {
+//         let lengthErrors: TypeError = new TypeError();
+//         const result = Object.fromEntries(Object.keys(obj).map((key) => {
+//             try {
+//                 const value = (obj as Record<string, unknown>)[key];
+//                 return [key, assert(symbol.valueType, value, [...path, key])] as const;
+//             } catch (error) {
+//                 if (error instanceof TypeError) {
+//                     lengthErrors = lengthErrors.withErrors(...error.errors);
+//                     return [key, !null] as const;
+//                 } else {
+//                     throw error;
+//                 }
+//             }
+//         }));
+//         if (lengthErrors.errors.length > 0) {
+//             throw lengthErrors;
+//         }
+//         return result as ResultType<TSymbol>;
+//     }
+//     if (symbol.type == 'array' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
+//         let lengthErrors: TypeError = new TypeError();
+//         const result = obj.map((element, i) => {
+//             try {
+//                 return assert(symbol.valueType, element, [...path, `[${i}]`]);
+//             } catch (error) {
+//                 if (error instanceof TypeError) {
+//                     lengthErrors = lengthErrors.withErrors(...error.errors);
+//                 } else {
+//                     throw error;
+//                 }
+//             }
+//         });
+//         if (lengthErrors.errors.length > 0) {
+//             throw lengthErrors;
+//         }
+//         return result as ResultType<TSymbol>;
+//     }
+//     if (symbol.type == 'tuple' && typeof obj == 'object' && obj !== null && Array.isArray(obj)) {
+//         let lengthErrors: TypeError = new TypeError();
+//         if (obj.length > symbol.valueTypes.length) {
+//             lengthErrors = lengthErrors.withErrors(...Array.from({ length: obj.length - symbol.valueTypes.length }).map((_, i) => ({
+//                 type: 'to many tuple elements',
+//                 expected: undefined,
+//                 actual: obj[i + symbol.valueTypes.length],
+//                 path: [...path, `[${i + symbol.valueTypes.length}]`],
+//             } satisfies TypeErrorType)));
+//         }
+
+//         const result = symbol.valueTypes.map((prop, i) => {
+//             const v = obj[i];
+//             if (v == undefined) {
+//                 lengthErrors = lengthErrors.withErrors({
+//                     type: 'missing tuple element',
+//                     actual: undefined,
+//                     expected: prop,
+//                     path: [...path, `[${i}]`]
+//                 });
+//             } else {
+//                 try {
+//                     return assert(prop, v, [...path, `[${i}]`]);
+
+//                 } catch (error) {
+//                     if (error instanceof TypeError) {
+//                         lengthErrors = lengthErrors.withErrors(...error.errors);
+//                     } else {
+//                         throw error;
+//                     }
+//                 }
+//             }
+//         });
+
+//         if (lengthErrors.errors.length > 0) {
+//             throw lengthErrors;
+//         }
+//         return result as ResultType<TSymbol>;
+//     }
+//     throw new TypeError({
+//         type: 'wrong type',
+//         expected: symbol,
+//         actual: obj,
+//         path: [...path],
+//     });
+// }
 let isBlocking = false;
 const listener: ((e: { isBlocking: boolean }) => void)[] = [];
 export function OnBlockingChanged(ev: (e: { isBlocking: boolean }) => void) {
@@ -427,7 +1008,14 @@ export function retryBlocking() {
 }
 
 let tokenPromise: undefined | Promise<string>;
-export async function requestFromBackend<TPath extends Pathes, TMethod extends Method<TPath>>(path: TPath, method: TMethod, ...params: EmptyToVoid<UndefinableToOptional<RoutParams<TPath> & QueryParams<TPath, TMethod>>>): Promise<Result<TPath, TMethod>> {
+export async function requestFromBackend<TPath extends Pathes, TMethod extends Method<TPath>>(path: TPath, method: TMethod, ...params: EmptyToVoid<UndefinableToOptional<RoutParams<TPath> & QueryParams<TPath, TMethod> & BodyParams<TPath, TMethod>>>): Promise<{
+    success: true,
+    result: Result<TPath, TMethod>
+} |
+{
+    success: false,
+    error: ResultType<typeof errorSymbol>
+}> {
     const parameters = params[0] as Record<string, unknown>;
     const currentData = api[path][method] as ApiData;
     const matchs = [...path.matchAll(
@@ -443,18 +1031,19 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
     let request: string = path;
     for (const { key, type, sequence } of routParameters) {
         const data = parameters[key];
-        const symbol: sympolData | null = type.includes('|')
-            ? { type: 'enum', values: type.split('|') }
+        const symbol = type.includes('|')
+            ? { type: 'enum', values: type.split('|') } as const
             : type == 'string' || type == 'number'
-                ? { type }
-                : null;
+                ? { type } as const
+                : null satisfies sympolData | null;
         if (symbol == null) {
             throw new Error(`Unknown TYPE ${type} for rout parameter`);
         }
-        if (!assert(symbol, data)) {
-            throw new Error(`Vaule ${JSON.stringify(data)} dose not satisfy type ${JSON.stringify(symbol)} for part ${key}`);
-        }
-        request = request.replace(sequence, data.toString());
+        const transformed = toJsonObject(symbol, data as any);
+        // if (!assert(symbol, data)) {
+        //     throw new Error(`Vaule ${JSON.stringify(data)} dose not satisfy type ${JSON.stringify(symbol)} for part ${key}`);
+        // }
+        request = request.replace(sequence, transformed.toString());
     }
     if (currentData.query) {
         let first = true;
@@ -540,19 +1129,33 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
                 return parseFloat(text);
             } else {
                 const json = JSON.parse(text);
-                if (assert(r, json)) {
-                    return json;
-                } else {
-                    return new Error('assert should throw instead of returning false');
-                }
+                const transformed = fromJsonObject(r, json);
+                return transformed;
+                // if (assert(r, json)) {
+                //     return json;
+                // } else {
+                //     return new Error('assert should throw instead of returning false');
+                // }
             }
         } catch (error) {
             return error;
         }
     });
     const resultsWithoutErrors = results.filter(x => !(x instanceof TypeError) && !(x instanceof Error));
-    
+
     if (resultsWithoutErrors.length == 0) {
+
+        try {
+            const json = JSON.parse(text);
+            const transformed = fromJsonObject(errorSymbol, json);
+            return {
+                success: false,
+                error: transformed
+            };
+
+        } catch (error) {
+
+        }
 
         const errors = results.filter((x): x is TypeError => x instanceof TypeError);
         if (errors.length > 0) {
@@ -564,5 +1167,9 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
     if (resultsWithoutErrors.length > 1) {
         console.warn(`Result ${text} was ambigious`);
     }
-    return resultsWithoutErrors[0] as any;
+    return {
+        success: true,
+        result:
+            resultsWithoutErrors[0] as any
+    };
 }
