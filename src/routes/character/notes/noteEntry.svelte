@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { requestFromBackend, type Result } from '$lib/network/backend';
 	import type { Note } from './+page.svelte';
+	import DOMPurify from 'dompurify';
+	import { marked } from 'marked';
 
-	
-
+	let edit = $state(false);
 	let {
-		note =$bindable(),
+		note = $bindable(),
 		characterId
 	}: {
 		characterId: number;
@@ -34,9 +35,34 @@
 
 {#if note}
 	<article>
-		<textarea bind:value={currentNoteText}></textarea>
-		<button disabled={currentNoteText == note.text} onclick={() => updateText(currentNoteText)}
-			>Update</button
+		<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}" />
+		<button
+			onclick={() => (edit = !edit)}
+			class="text"
+			style="float: right; grid-column: 3; justify-self: start;align-self: start;">🖊️</button
 		>
+		{#if edit}
+			<textarea style="grid-column: 2; grid-row: 1;" bind:value={currentNoteText}></textarea>
+			<button
+				disabled={currentNoteText == note.text}
+				onclick={() => updateText(currentNoteText)}
+				style="grid-row: 2;grid-column: span 3; ">Update</button
+			>{:else}
+			<div style="grid-column: 2; grid-row: 1;">
+				{@html DOMPurify.sanitize(marked(currentNoteText))}
+			</div>
+		{/if}
 	</article>
 {/if}
+
+<style lang="scss">
+	article {
+		display: grid;
+		grid-template-columns: 4rem 1fr auto;
+		grid-template-rows: 1fr auto;
+	}
+	img {
+		max-height: 5rem;
+		float: left;
+	}
+</style>

@@ -47,3 +47,54 @@ img.character-image {
     border-radius: 3rem;
 
 }
+
+
+
+button.text {
+    --pico-color: var(--pico-primary);
+    --pico-background-color: transparent;
+    --pico-underline: var(--pico-primary-underline);
+    outline: none;
+    background-color: var(--pico-background-color);
+    color: var(--pico-color);
+    text-decoration: none;
+    text-decoration-color: var(--pico-underline);
+    text-underline-offset: 0.125em;
+    transition: background-color var(--pico-transition), color var(--pico-transition), text-decoration var(--pico-transition), box-shadow var(--pico-transition);
+    border: none;
+    margin: 0;
+    padding: 0;
+    display: inline;
+
+    &:hover,
+    &:focus,
+    &:active {
+        --pico-color: var(--pico-primary-hover);
+        --pico-underline: var(--pico-primary-hover-underline);
+        --pico-text-decoration: underline;
+    }
+}
+
+button.link {
+    --pico-color: var(--pico-primary);
+    --pico-background-color: transparent;
+    --pico-underline: var(--pico-primary-underline);
+    outline: none;
+    background-color: var(--pico-background-color);
+    color: var(--pico-color);
+    text-decoration: underline;
+    text-decoration-color: var(--pico-underline);
+    text-underline-offset: 0.125em;
+    transition: background-color var(--pico-transition), color var(--pico-transition), text-decoration var(--pico-transition), box-shadow var(--pico-transition);
+    border: none;
+    display: inline;
+    padding: 0;
+
+    &:hover,
+    &:focus,
+    &:active {
+        --pico-color: var(--pico-primary-hover);
+        --pico-underline: var(--pico-primary-hover-underline);
+        --pico-text-decoration: underline;
+    }
+}

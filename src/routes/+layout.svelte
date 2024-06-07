@@ -35,7 +35,7 @@
 	let loaded = $state(false);
 	let scrollPosition = $state(0);
 	let characterId: undefined | number = $state();
-	let character: (Result<'/character/{id:number}', 'GET'> & { typ: 'character' }) | undefined =
+	let character: (Result<'/character/{id:number}', 'GET'> & { type: 'character' }) | undefined =
 		$state();
 	let observer: MutationObserver;
 
@@ -121,7 +121,7 @@
 					const loaded = await requestFromBackend('/character/{id:number}', 'GET', {
 						id: characterId
 					});
-					if (loaded.success && loaded.result.typ == 'character') {
+					if (loaded.success && loaded.result.type == 'character') {
 						character = loaded.result;
 					} else {
 						characterId = undefined;
@@ -169,10 +169,10 @@
 				requestFromBackend('/character/{id:number}', 'GET', {
 					id: characterId
 				}).then((loaded) => {
-					if (loaded.success && loaded.result.typ == 'character') {
+					if (loaded.success && loaded.result.type == 'character') {
 						character = loaded.result;
 					} else {
-						characterId = undefined;
+						character = undefined;
 					}
 				});
 			}
@@ -192,7 +192,7 @@
 		</div>
 	</dialog>
 {/if}
-{#if loaded}
+{#if loaded|| true}
 	<main class="container">
 		<slot></slot>
 	</main>
@@ -272,6 +272,27 @@
 	:global(body) {
 		overflow-x: hidden;
 	}
+	
+	[data-theme="light"],
+  :root:not([data-theme="dark"]) {
+    --backdrop:blur(5px) grayscale(100%) brightness(140%);
+  }
+
+  // Dark color scheme (Auto)
+  // Automatically enabled if user has Dark mode enabled
+  @media only screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+		--backdrop:blur(5px) grayscale(100%) brightness(40%);
+
+    }
+  }
+
+  // Dark color scheme (Forced)
+  // Enabled if forced with data-theme="dark"
+  [data-theme="dark"] {
+	--backdrop:blur(5px) grayscale(100%) brightness(40%);
+
+  }
 	nav.sub-menu {
 		--modifier: max(100vh, -1 * (100vw - var(--scrollbar-width)));
 		&.show {
@@ -281,7 +302,8 @@
 			width: calc(3 * var(--modifier));
 			padding: calc(var(--modifier)) calc(var(--modifier));
 			border: 1px solid var(--pico-primary);
-			backdrop-filter: blur(5px) grayscale(100%) brightness(40%);
+			backdrop-filter: var(--backdrop); 
+			
 		}
 		display: block;
 
@@ -329,7 +351,7 @@
 		border-top: 1px transparent solid;
 		&.scrolled {
 			border-top: 1px var(--pico-primary) solid;
-			backdrop-filter: blur(10px) brightness(40%);
+			backdrop-filter: var(--backdrop);
 			// opacity: 0.8;
 			// background-color: rgba(  var(--pico-background-color), 0.8);
 		}

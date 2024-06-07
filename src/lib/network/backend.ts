@@ -33,22 +33,24 @@ type ApiData = {
         optional?: false;
         properties: Record<string, sympolData & { type: 'string' | 'number' }>
     };
-    body?: sympolData,
+    body?: sympolData & {
+        type: 'object';
+    },
     result: sympolData[];
 };
 const errorSymbol = {
     type: 'object', properties: {
-        typ: { type: 'enum', values: ['error'] },
+        type: { type: 'enum', values: ['error'] },
         description: { type: 'string' },
     }
 } as const satisfies sympolData;
 const api = {
-    '/character/list': {
+    '/character': {
         'GET': {
             result: [{
                 type: 'object',
                 properties: {
-                    typ: {
+                    type: {
                         type: 'enum',
                         values: ['characterList']
                     },
@@ -95,7 +97,7 @@ const api = {
                 {
                     type: 'object',
                     properties: {
-                        typ: { type: 'enum', values: ['skill'] },
+                        type: { type: 'enum', values: ['skill'] },
                         name: { type: 'string' },
                         "gezielter Schuss": {
                             type: 'object', properties: {
@@ -202,11 +204,11 @@ const api = {
     },
     '/character/{id:number}': {
         'GET': {
-            result: [errorSymbol,
+            result: [
                 {
                     type: 'object',
                     properties: {
-                        typ: {
+                        type: {
                             type: 'enum',
                             values: ['character']
                         },
@@ -267,6 +269,7 @@ const api = {
                 type: 'object',
                 properties: {
                     text: { type: 'string' },
+                    title: { type: 'string' },
                     image: {
                         type: 'bytes',
                         optional: true,
@@ -1067,6 +1070,25 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
             }
         }
     }
+    let body: string | undefined = undefined;
+    if (currentData.body) {
+        const r = {} as Record<string, unknown>
+        let first = true;
+        for (const key in currentData.body.properties) {
+            if (Object.prototype.hasOwnProperty.call(currentData.body.properties, key)) {
+                const symbol = currentData.body.properties[key];
+                const value = parameters[key];
+
+
+                r[key] = toJsonObject(symbol, value as any);
+
+
+            }
+        }
+        body = JSON.stringify(r);
+    }
+
+
     request = "https://dreibart.de/rpgdb/restAPI.php" + request;
 
 
@@ -1102,11 +1124,19 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
         token = await promise;
     }
 
+    const headers = body != undefined
+        ? new Headers({
+            "Content-Type": "application/json",
+            "Content-Length": JSON.stringify(body).length.toString(),
+            "X-Auth-Token": token
+        })
+        : new Headers({
+            'X-Auth-Token': token
+        });
     const response = await fetch(request, {
         method: method,
-        headers: {
-            'X-Auth-Token': token
-        }
+        headers,
+        body
     });
 
     if (response.status == 401) {

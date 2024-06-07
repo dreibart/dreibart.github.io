@@ -87,13 +87,14 @@
 
 	function newNote(
 		characterId: number,
-		titel: string,
+		title: string,
 		text: string,
 		image: Uint8Array | undefined
 	) {
 		requestFromBackend('/character/{id:number}/notes', 'PATCH', {
 			id: characterId,
 			text: text,
+			title,
 			image: image
 		});
 	}

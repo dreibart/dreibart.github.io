@@ -5,7 +5,7 @@
 	import { browser } from '$app/environment';
 	import Logo from '$lib/logo.svelte';
 
-	let data: Result<'/character/list', 'GET'>['characters'][number][] = $state([]);
+	let data: Result<'/character', 'GET'>['characters'][number][] = $state([]);
 
 	let loadingCharacters = $state(false);
 	let errorLoadingCharacters = $state(false);
@@ -13,7 +13,7 @@
 		loadingCharacters = true;
 
 		try {
-			const list = await requestFromBackend('/character/list', 'GET');
+			const list = await requestFromBackend('/character', 'GET');
 			if (list.success)
 				data.push(
 					...list.result.characters
