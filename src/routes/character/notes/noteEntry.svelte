@@ -19,12 +19,14 @@
 	let currentNoteTitle: string = $state('');
 	let imageBuffer: undefined | ArrayBuffer = $state();
 
+let imageState=$state(1);
+
 	let image = $derived.by(() => {
 		if (!browser || !imageBuffer) {
-			return undefined;
+			return null;
 		}
 		return new Promise<string>((resolve) => {
-			console.log(imageBuffer);
+			
 			const reader = new FileReader();
 			reader.addEventListener(
 				'load',
@@ -46,21 +48,26 @@
 	async function updateText(
 		text: string | undefined,
 		title: string | undefined,
-		imageBuffer: ArrayBuffer | undefined
+		buffer: ArrayBuffer | undefined
 	) {
 		try {
-			requestFromBackend('/character/{id:number}/notes/{note_id:number}', 'PATCH', {
+		const response=await	requestFromBackend('/character/{id:number}/notes/{note_id:number}', 'PATCH', {
 				id: characterId,
 				note_id: note.id,
 				text,
 				topic: title,
-				image: imageBuffer ? new Uint8Array(imageBuffer) : undefined
+				image: buffer ? new Uint8Array(buffer) : undefined
 			});
+			if(response.success){
+				note=response.result.note;
+				imageBuffer=undefined;
+				edit=false;
+				imageState++;
+			}
 		} catch (error) {
 			alert('fehler update');
 		}
-		if (text) note.text = text;
-		if (title) note.topic = title;
+	
 	}
 
 	async function updateImage(params: FileList | null) {
@@ -92,7 +99,7 @@
 			{/if}
 		</header>
 		<dialog open={show} onclick={() => (show = !show)}>
-			<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}" />
+			<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}" />
 		</dialog>
 
 		<button
@@ -129,7 +136,7 @@
 				{:else}
 					<img
 						style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
-						src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
+						src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}"
 					/>
 				{/if}
 			</label>
