@@ -5,6 +5,7 @@
 	import { marked } from 'marked';
 
 	let edit = $state(false);
+	let show = $state(false);
 	let {
 		note = $bindable(),
 		characterId
@@ -35,7 +36,13 @@
 
 {#if note}
 	<article>
-		<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}" />
+		<dialog open={show} onclick={() => (show = !show)}>
+			<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}" />
+		</dialog>
+		<img
+			src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
+			onclick={() => (show = !show)}
+		/>
 		<button
 			onclick={() => (edit = !edit)}
 			class="text"
@@ -63,6 +70,8 @@
 	}
 	img {
 		max-height: 5rem;
-		float: left;
+	}
+	dialog img {
+		max-height: 80vh;
 	}
 </style>
