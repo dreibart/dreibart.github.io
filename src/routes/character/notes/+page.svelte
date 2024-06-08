@@ -16,6 +16,9 @@
 	import { characterIdFromPage } from '../../+layout.svelte';
 	import NoteEntry from './noteEntry.svelte';
 	import { base64, base64url } from 'rfc4648';
+	import { crossfade, fade } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
+	import { flip } from 'svelte/animate';
 
 	let characterId: undefined | number = $state();
 
@@ -85,19 +88,27 @@
 		}
 	});
 
-	function newNote(
+	async function newNote(
 		characterId: number,
 		title: string,
 		text: string,
 		image: Uint8Array | undefined
 	) {
-		requestFromBackend('/character/{id:number}/notes', 'PATCH', {
+		const respones = await requestFromBackend('/character/{id:number}/notes', 'PATCH', {
 			id: characterId,
 			text: text,
 			title,
 			image: image
 		});
+		if (respones.success) {
+			notes.splice(0, 0, respones.result.note);
+		}
 	}
+
+	const [send, receive] = crossfade({
+		duration: 1500,
+		easing: quintOut
+	});
 </script>
 
 {#if errorMessage}
@@ -105,9 +116,6 @@
 {/if}
 
 {#if characterId}
-	{#each notes as note, i}
-		<NoteEntry {characterId} bind:note={notes[i]} />
-	{/each}
 	<article>
 		<label>
 			Titel
@@ -144,11 +152,16 @@
 		</label>
 		<button
 			onclick={()=>{
-			newNote(characterId!, newNoteTitel, newNoteText, imageBuffer? new Uint8Array(imageBuffer):undefined)
-		}}
+		newNote(characterId!, newNoteTitel, newNoteText, imageBuffer? new Uint8Array(imageBuffer):undefined)
+	}}
 			>Anlegen</button
 		>
 	</article>
+	{#each notes as note, i (note.id)}{@const key = note.id}
+		<div animate:flip in:fade out:fade>
+			<NoteEntry {characterId} bind:note={notes[i]} />
+		</div>
+	{/each}
 {/if}
 
 <style lang="scss">

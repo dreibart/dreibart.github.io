@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { requestFromBackend, type Result } from '$lib/network/backend';
 	import type { Note } from './+page.svelte';
 	import DOMPurify from 'dompurify';
@@ -15,47 +16,141 @@
 	} = $props();
 
 	let currentNoteText: string = $state('');
+	let currentNoteTitle: string = $state('');
+	let imageBuffer: undefined | ArrayBuffer = $state();
 
+	let image = $derived.by(() => {
+		if (!browser || !imageBuffer) {
+			return undefined;
+		}
+		return new Promise<string>((resolve) => {
+			console.log(imageBuffer);
+			const reader = new FileReader();
+			reader.addEventListener(
+				'load',
+				() => {
+					resolve(reader.result as string);
+				},
+				false
+			);
+			if (imageBuffer) {
+				reader.readAsDataURL(new Blob([imageBuffer]));
+			}
+		});
+	});
 	$effect(() => {
 		currentNoteText = note.text;
+		currentNoteTitle = note.topic;
 	});
 
-	async function updateText(text: string) {
+	async function updateText(
+		text: string | undefined,
+		title: string | undefined,
+		imageBuffer: ArrayBuffer | undefined
+	) {
 		try {
 			requestFromBackend('/character/{id:number}/notes/{note_id:number}', 'PATCH', {
 				id: characterId,
 				note_id: note.id,
-				text
+				text,
+				topic: title,
+				image: imageBuffer ? new Uint8Array(imageBuffer) : undefined
 			});
 		} catch (error) {
 			alert('fehler update');
 		}
-		note.text = text;
+		if (text) note.text = text;
+		if (title) note.topic = title;
+	}
+
+	async function updateImage(params: FileList | null) {
+		if (!params || params.length == 0) {
+			return;
+		}
+		const file = params.item(0);
+		if (file == null) {
+			return;
+		}
+		imageBuffer = await file.arrayBuffer();
 	}
 </script>
 
 {#if note}
 	<article>
+		<header>
+			{#if note.changed}
+				<span style="float: right;"
+					>{note.changed.toLocaleString()} ({note.created.toLocaleString()})</span
+				>
+			{:else}
+				<span style="float: right;">{note.created.toLocaleString()}</span>
+			{/if}
+			{#if edit}
+				<input type="text" bind:value={currentNoteTitle} />
+			{:else}
+				<strong>{note.topic}</strong>
+			{/if}
+		</header>
 		<dialog open={show} onclick={() => (show = !show)}>
 			<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}" />
 		</dialog>
-		<img
-			src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
-			onclick={() => (show = !show)}
-		/>
+
 		<button
 			onclick={() => (edit = !edit)}
 			class="text"
-			style="float: right; grid-column: 3; justify-self: start;align-self: start;">🖊️</button
+			style="grid-row: 2; grid-column: 3; justify-self: start;align-self: start;">🖊️</button
 		>
 		{#if edit}
-			<textarea style="grid-column: 2; grid-row: 1;" bind:value={currentNoteText}></textarea>
+			<textarea style="grid-column: 2; grid-row: 2;" bind:value={currentNoteText}></textarea>
 			<button
-				disabled={currentNoteText == note.text}
-				onclick={() => updateText(currentNoteText)}
-				style="grid-row: 2;grid-column: span 3; ">Update</button
-			>{:else}
-			<div style="grid-column: 2; grid-row: 1;">
+				disabled={currentNoteText == note.text &&
+					currentNoteTitle == note.topic &&
+					image == undefined}
+				onclick={() => updateText(currentNoteText, currentNoteTitle, imageBuffer)}
+				style="grid-row: 3;grid-column: span 3; ">Update</button
+			>
+			<label>
+				<input
+					type="file"
+					onchange={(e) => {
+						updateImage(e.currentTarget.files);
+					}}
+				/>
+				{#if image}
+					{#await image}
+						<span aria-busy="true">Lade</span>
+					{:then i}
+						{#if i}
+							<img src={i} />
+						{:else}
+							<span>Fehler</span>
+						{/if}
+					{/await}
+				{:else}
+					<img
+						style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
+						src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
+					/>
+				{/if}
+			</label>
+		{:else}
+			{#if image}
+				{#await image}
+					<span aria-busy="true">Lade</span>
+				{:then i}
+					{#if i}
+						<img src={i} />
+					{:else}
+						<span>Fehler</span>
+					{/if}
+				{/await}
+			{:else}
+				<img onclick={() => (show = !show)}
+					style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
+					src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
+				/>
+			{/if}
+			<div style="grid-column: 2; grid-row: 2;">
 				{@html DOMPurify.sanitize(marked(currentNoteText))}
 			</div>
 		{/if}
@@ -65,13 +160,24 @@
 <style lang="scss">
 	article {
 		display: grid;
+		gap: var(--pico-spacing);
 		grid-template-columns: 4rem 1fr auto;
-		grid-template-rows: 1fr auto;
+		grid-template-rows: auto 1fr auto;
+	}
+	header {
+		grid-row: 1;
+		grid-column: span 3;
 	}
 	img {
 		max-height: 5rem;
 	}
 	dialog img {
 		max-height: 80vh;
+	}
+	input[type='file'] {
+		display: none;
+	}
+	label {
+		cursor: pointer;
 	}
 </style>
