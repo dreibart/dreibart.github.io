@@ -44,7 +44,7 @@ const errorSymbol = {
         description: { type: 'string' },
     }
 } as const satisfies sympolData;
-const noteSymbol = {
+const noteSymbol={
     type: 'object',
     properties: {
         id: { type: 'number' },
@@ -53,7 +53,7 @@ const noteSymbol = {
         created: { type: 'date-time' },
         changed: {
             type: 'date-time',
-            optional: true,
+             optional: true,
 
         },
         image: {
@@ -278,21 +278,16 @@ const api = {
                     text: { type: 'string' },
                     title: { type: 'string' },
                     image: {
-                        type: 'object',
+                        type: 'bytes',
                         optional: true,
-                        properties: {
-                            data: {
-                                type: 'bytes',
-                            }, type: { type: 'string' }
-                        }
                     }
                 }
             },
             result: [{
-                type: 'object',
-                properties: {
-                    type: { type: 'enum', values: ['note'] },
-                    note: noteSymbol
+                type:'object',
+                properties:{
+                    type:{type:'enum',values:['note']},
+                    note:noteSymbol
                 }
             }]
         }
@@ -335,10 +330,10 @@ const api = {
                 }
             },
             result: [{
-                type: 'object',
-                properties: {
-                    type: { type: 'enum', values: ['note'] },
-                    note: noteSymbol
+                type:'object',
+                properties:{
+                    type:{type:'enum',values:['note']},
+                    note:noteSymbol
                 }
             }]
         }
@@ -462,10 +457,10 @@ type TypeErrorType = {
 class TypeError {
 
     private readonly _errors: TypeErrorType[];
-    private readonly rout: string;
-    constructor(rout: string, ...errors: TypeErrorType[]) {
+private readonly rout:string;
+    constructor(rout:string,...errors: TypeErrorType[]) {
         this._errors = errors;
-        this.rout = rout;
+        this.rout=rout;
     }
 
 
@@ -478,7 +473,7 @@ class TypeError {
      * withErrors
      */
     public withErrors(...errors: TypeErrorType[]) {
-        return new TypeError(this.rout, ...this._errors, ...errors);
+        return new TypeError(this.rout,...this._errors, ...errors);
     }
 }
 
@@ -496,7 +491,7 @@ function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj i
 
 
 
-function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol, obj: unknown, path: string[] = []): ResultType<TSymbol> {
+function fromJsonObject<TSymbol extends sympolData>(rout:string,symbol: TSymbol, obj: unknown, path: string[] = []): ResultType<TSymbol> {
     if (symbol.optional == true && obj === undefined) {
         return undefined!;
     }
@@ -529,7 +524,7 @@ function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbo
     if (symbol.type == 'one-off') {
         const resultsUnfiltert = symbol.select.map(symbol => {
             try {
-                return fromJsonObject(rout, symbol, obj, [...path]);
+                return fromJsonObject(rout,symbol, obj, [...path]);
             } catch (error) {
                 if (error instanceof TypeError) {
                     return error;
@@ -553,7 +548,7 @@ function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbo
         const result = Object.fromEntries(Object.entries(symbol.properties).map(([key, property]) => {
             try {
                 const value = (obj as Record<string, unknown>)[key];
-                return [key, fromJsonObject(rout, property, value, [...path, key])] as const;
+                return [key, fromJsonObject(rout,property, value, [...path, key])] as const;
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
@@ -573,7 +568,7 @@ function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbo
         const result = Object.fromEntries(Object.keys(obj).map((key) => {
             try {
                 const value = (obj as Record<string, unknown>)[key];
-                return [key, fromJsonObject(rout, symbol.valueType, value, [...path, key])] as const;
+                return [key, fromJsonObject(rout,symbol.valueType, value, [...path, key])] as const;
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
@@ -592,7 +587,7 @@ function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbo
         let lengthErrors: TypeError = new TypeError(rout,);
         const result = obj.map((element, i) => {
             try {
-                return fromJsonObject(rout, symbol.valueType, element, [...path, `[${i}]`]);
+                return fromJsonObject(rout,symbol.valueType, element, [...path, `[${i}]`]);
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
@@ -628,7 +623,7 @@ function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbo
                 });
             } else {
                 try {
-                    return fromJsonObject(rout, prop, v, [...path, `[${i}]`]);
+                    return fromJsonObject(rout,prop, v, [...path, `[${i}]`]);
 
                 } catch (error) {
                     if (error instanceof TypeError) {
@@ -645,7 +640,7 @@ function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbo
         }
         return result as ResultType<TSymbol>;
     }
-    throw new TypeError(rout, {
+    throw new TypeError(rout,{
         type: 'wrong type',
         expected: symbol,
         actual: obj,
@@ -653,7 +648,7 @@ function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbo
     });
 }
 
-function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol, obj: ResultType<TSymbol>, path: string[] = []): string | number | object {
+function toJsonObject<TSymbol extends sympolData>(rout:string,symbol: TSymbol, obj: ResultType<TSymbol>, path: string[] = []): string | number | object {
     if (symbol.optional == true && obj === undefined) {
         return undefined!;
     }
@@ -676,7 +671,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
             return obj.toISO();
         } else {
 
-            throw new TypeError(rout, {
+            throw new TypeError(rout,{
                 type: 'invalid datetime',
                 actual: obj,
                 path: [...path],
@@ -689,7 +684,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
         if (obj.isValid) {
             return obj.toISODate();
         } else {
-            throw new TypeError(rout, {
+            throw new TypeError(rout,{
                 type: 'invalid datetime',
                 actual: obj,
                 path: [...path],
@@ -705,7 +700,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
     if (symbol.type == 'one-off') {
         const resultsUnfiltert = symbol.select.map(symbol => {
             try {
-                return toJsonObject(rout, symbol, obj, [...path]);
+                return toJsonObject(rout,symbol, obj, [...path]);
             } catch (error) {
                 if (error instanceof TypeError) {
                     return error;
@@ -729,7 +724,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
         const result = Object.fromEntries(Object.entries(symbol.properties).map(([key, property]) => {
             try {
                 const value = (obj as Record<string, unknown>)[key];
-                return [key, toJsonObject(rout, property, value, [...path, key])] as const;
+                return [key, toJsonObject(rout,property, value, [...path, key])] as const;
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
@@ -749,7 +744,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
         const result = Object.fromEntries(Object.keys(obj).map((key) => {
             try {
                 const value = (obj as Record<string, unknown>)[key];
-                return [key, toJsonObject(rout, symbol.valueType, value, [...path, key])] as const;
+                return [key, toJsonObject(rout,symbol.valueType, value, [...path, key])] as const;
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
@@ -768,7 +763,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
         let lengthErrors: TypeError = new TypeError(rout,);
         const result = obj.map((element, i) => {
             try {
-                return toJsonObject(rout, symbol.valueType, element, [...path, `[${i}]`]);
+                return toJsonObject(rout,symbol.valueType, element, [...path, `[${i}]`]);
             } catch (error) {
                 if (error instanceof TypeError) {
                     lengthErrors = lengthErrors.withErrors(...error.errors);
@@ -804,7 +799,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
                 });
             } else {
                 try {
-                    return toJsonObject(rout, prop, v, [...path, `[${i}]`]);
+                    return toJsonObject(rout,prop, v, [...path, `[${i}]`]);
 
                 } catch (error) {
                     if (error instanceof TypeError) {
@@ -821,7 +816,7 @@ function toJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol,
         }
         return result;
     }
-    throw new TypeError(rout, {
+    throw new TypeError(rout,{
         type: 'wrong type',
         expected: symbol,
         actual: obj,
@@ -1051,7 +1046,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
         if (symbol == null) {
             throw new Error(`Unknown TYPE ${type} for rout parameter`);
         }
-        const transformed = toJsonObject(path, symbol, data as any);
+        const transformed = toJsonObject(path,symbol, data as any);
         // if (!assert(symbol, data)) {
         //     throw new Error(`Vaule ${JSON.stringify(data)} dose not satisfy type ${JSON.stringify(symbol)} for part ${key}`);
         // }
@@ -1082,13 +1077,13 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
     let body: string | undefined = undefined;
     if (currentData.body) {
         const r = {} as Record<string, unknown>;
-        for (const key in currentData.body.properties) {
+         for (const key in currentData.body.properties) {
             if (Object.prototype.hasOwnProperty.call(currentData.body.properties, key)) {
                 const symbol = currentData.body.properties[key];
                 const value = parameters[key];
 
 
-                r[key] = toJsonObject(path, symbol, value as any);
+                r[key] = toJsonObject(path,symbol, value as any);
 
 
             }
@@ -1167,7 +1162,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
                 return parseFloat(text);
             } else {
                 const json = JSON.parse(text);
-                const transformed = fromJsonObject(path, r, json);
+                const transformed = fromJsonObject(path,r, json);
                 return transformed;
                 // if (assert(r, json)) {
                 //     return json;
@@ -1185,7 +1180,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
 
         try {
             const json = JSON.parse(text);
-            const transformed = fromJsonObject(path, errorSymbol, json);
+            const transformed = fromJsonObject(path,errorSymbol, json);
             return {
                 success: false,
                 error: transformed
