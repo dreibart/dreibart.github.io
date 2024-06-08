@@ -27,13 +27,13 @@
 
 	let newNoteTitel = $state('');
 	let newNoteText = $state('');
-	let imageBuffer: undefined | ArrayBuffer = $state();
+	let imageBuffer: undefined | File = $state();
 
 	let image = $derived.by(() => {
 		if (!browser || !imageBuffer) {
 			return undefined;
 		}
-		return new Promise<string>((resolve) => {
+		return new Promise<string>(async (resolve) => {
 			console.log(imageBuffer);
 			const reader = new FileReader();
 			reader.addEventListener(
@@ -44,7 +44,7 @@
 				false
 			);
 			if (imageBuffer) {
-				reader.readAsDataURL(new Blob([imageBuffer]));
+				reader.readAsDataURL(new Blob([await imageBuffer.arrayBuffer()]));
 			}
 		});
 	});
@@ -57,7 +57,8 @@
 		if (file == null) {
 			return;
 		}
-		imageBuffer = await file.arrayBuffer();
+		file.type;
+		imageBuffer = await file;
 	}
 
 	onMount(() => {});
@@ -98,7 +99,7 @@
 			id: characterId,
 			text: text,
 			title,
-			image: image
+			image: image?{data:image,type:imageBuffer!.type}:undefined
 		});
 		if (respones.success) {
 			notes.splice(0, 0, respones.result.note);
