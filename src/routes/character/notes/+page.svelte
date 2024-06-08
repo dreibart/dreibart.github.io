@@ -99,7 +99,9 @@
 			id: characterId,
 			text: text,
 			title,
-			image: image?{data:image,type:imageBuffer!.type}:undefined
+			image: imageBuffer
+				? { data: new Uint8Array(await imageBuffer.arrayBuffer()), type: imageBuffer!.type }
+				: undefined
 		});
 		if (respones.success) {
 			notes.splice(0, 0, respones.result.note);
@@ -151,12 +153,9 @@
 				{/if}
 			</div>
 		</label>
-		<button
-			onclick={()=>{
-		newNote(characterId!, newNoteTitel, newNoteText, imageBuffer? new Uint8Array(imageBuffer):undefined)
-	}}
-			>Anlegen</button
-		>
+		<button onclick={()=>{
+		newNote(characterId!, newNoteTitel, newNoteText)
+	}}>Anlegen</button>
 	</article>
 	{#each notes as note, i (note.id)}{@const key = note.id}
 		<div animate:flip in:fade out:fade>
