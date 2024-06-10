@@ -89,12 +89,7 @@
 		}
 	});
 
-	async function newNote(
-		characterId: number,
-		title: string,
-		text: string,
-		image: Uint8Array | undefined
-	) {
+	async function newNote(characterId: number, title: string, text: string) {
 		const respones = await requestFromBackend('/character/{id:number}/notes', 'PATCH', {
 			id: characterId,
 			text: text,
@@ -105,13 +100,9 @@
 		});
 		if (respones.success) {
 			notes.splice(0, 0, respones.result.note);
+			imageBuffer=undefined;
 		}
 	}
-
-	const [send, receive] = crossfade({
-		duration: 1500,
-		easing: quintOut
-	});
 </script>
 
 {#if errorMessage}
@@ -158,15 +149,19 @@
 	}}>Anlegen</button>
 	</article>
 	{#each notes as note, i (note.id)}{@const key = note.id}
-		<div animate:flip in:fade out:fade>
+		<div class="entry" animate:flip in:fade out:fade>
 			<NoteEntry {characterId} bind:note={notes[i]} />
 		</div>
 	{/each}
 {/if}
 
 <style lang="scss">
-	.image {
-		cursor: pointer;
+	.entry :global(.image) {
+		position: relative;
+		:global(label){
+
+			cursor: pointer;
+		}
 		width: 6rem;
 		height: 6rem;
 		text-align: center;

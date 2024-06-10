@@ -17,16 +17,15 @@
 
 	let currentNoteText: string = $state('');
 	let currentNoteTitle: string = $state('');
-	let imageBuffer: undefined | ArrayBuffer = $state();
+	let imageBuffer: undefined | null | ArrayBuffer = $state();
 
-let imageState=$state(1);
+	let imageState = $state(1);
 
 	let image = $derived.by(() => {
 		if (!browser || !imageBuffer) {
 			return null;
 		}
 		return new Promise<string>((resolve) => {
-			
 			const reader = new FileReader();
 			reader.addEventListener(
 				'load',
@@ -48,26 +47,29 @@ let imageState=$state(1);
 	async function updateText(
 		text: string | undefined,
 		title: string | undefined,
-		buffer: ArrayBuffer | undefined
+		buffer: ArrayBuffer | undefined | null
 	) {
 		try {
-		const response=await	requestFromBackend('/character/{id:number}/notes/{note_id:number}', 'PATCH', {
-				id: characterId,
-				note_id: note.id,
-				text,
-				topic: title,
-				image: buffer ? new Uint8Array(buffer) : undefined
-			});
-			if(response.success){
-				note=response.result.note;
-				imageBuffer=undefined;
-				edit=false;
+			const response = await requestFromBackend(
+				'/character/{id:number}/notes/{note_id:number}',
+				'PATCH',
+				{
+					id: characterId,
+					note_id: note.id,
+					text,
+					topic: title,
+					image: buffer === null ? null : buffer ? new Uint8Array(buffer) : undefined
+				}
+			);
+			if (response.success) {
+				note = response.result.note;
+				imageBuffer = undefined;
+				edit = false;
 				imageState++;
 			}
 		} catch (error) {
 			alert('fehler update');
 		}
-	
 	}
 
 	async function updateImage(params: FileList | null) {
@@ -116,47 +118,59 @@ let imageState=$state(1);
 				onclick={() => updateText(currentNoteText, currentNoteTitle, imageBuffer)}
 				style="grid-row: 3;grid-column: span 3; ">Update</button
 			>
-			<label>
-				<input
-					type="file"
-					onchange={(e) => {
-						updateImage(e.currentTarget.files);
-					}}
-				/>
-				{#if image}
-					{#await image}
-						<span aria-busy="true">Lade</span>
-					{:then i}
-						{#if i}
-							<img src={i} />
-						{:else}
-							<span>Fehler</span>
-						{/if}
-					{/await}
+			<div class="image">
+				{#if imageBuffer === null}
+				<button class="link" onclick={() => (imageBuffer = undefined)}
+					>wiederherstellen</button
+				><label>
+					<input
+						type="file"
+						onchange={(e) => {
+							updateImage(e.currentTarget.files);
+						}}
+					/>Hochladen</label
+				>
 				{:else}
-					<img
-						style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
-						src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}"
-					/>
+					<label>
+						<input
+							type="file"
+							onchange={(e) => {
+								updateImage(e.currentTarget.files);
+							}}
+						/>
+
+						{#if image}
+							{#await image}
+								<span aria-busy="true">Lade</span>
+							{:then i}
+								{#if i}
+									<img src={i} alt="selected" />
+								{:else}
+									<span>Fehler</span>
+								{/if}
+							{/await}
+						{:else}
+							<img
+								style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
+								src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}"
+							/>
+						{/if}
+					</label>
 				{/if}
-			</label>
+				<button
+					class="close text"
+					onclick={() => {
+						imageBuffer = null;
+					}}>X</button
+				>
+			</div>
 		{:else}
-			{#if image}
-				{#await image}
-					<span aria-busy="true">Lade</span>
-				{:then i}
-					{#if i}
-						<img src={i} />
-					{:else}
-						<span>Fehler</span>
-					{/if}
-				{/await}
-			{:else}
-				<img onclick={() => (show = !show)}
-					style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
-					src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
-				/>
-			{/if}
+			<img
+				onclick={() => (show = !show)}
+				style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
+				src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
+			/>
+
 			<div style="grid-column: 2; grid-row: 2;">
 				{@html DOMPurify.sanitize(marked(currentNoteText))}
 			</div>
@@ -168,7 +182,7 @@ let imageState=$state(1);
 	article {
 		display: grid;
 		gap: var(--pico-spacing);
-		grid-template-columns: 4rem 1fr auto;
+		grid-template-columns: auto 1fr auto;
 		grid-template-rows: auto 1fr auto;
 	}
 	header {
@@ -177,6 +191,7 @@ let imageState=$state(1);
 	}
 	img {
 		max-height: 5rem;
+		object-fit: cover;
 	}
 	dialog img {
 		max-height: 80vh;
@@ -186,5 +201,10 @@ let imageState=$state(1);
 	}
 	label {
 		cursor: pointer;
+	}
+	.close {
+		position: absolute;
+		top: 0;
+		right: 0;
 	}
 </style>
