@@ -148,7 +148,7 @@
 		newNote(characterId!, newNoteTitel, newNoteText)
 	}}>Anlegen</button>
 	</article>
-	{#each notes as note, i (note.id)}{@const key = note.id}
+	{#each notes as note, i (note?.id??i)}
 		<div class="entry" animate:flip in:fade out:fade>
 			<NoteEntry {characterId} bind:note={notes[i]} />
 		</div>

@@ -82,6 +82,19 @@
 		}
 		imageBuffer = await file.arrayBuffer();
 	}
+	async function deleteImage() {
+		const response = await requestFromBackend(
+			'/character/{id:number}/notes/{note_id:number}',
+			'DELETE',
+			{
+				id: characterId,
+				note_id: note.id
+			}
+		);
+		if(response.success){
+			note=undefined!;
+		}
+	}
 </script>
 
 {#if note}
@@ -104,32 +117,34 @@
 			<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}" />
 		</dialog>
 
-		<button
-			onclick={() => (edit = !edit)}
-			class="text"
-			style="grid-row: 2; grid-column: 3; justify-self: start;align-self: start;">🖊️</button
-		>
+		<div style="grid-row: 2; grid-column: 3; justify-self: start;align-self: start;">
+			<button onclick={() => (edit = !edit)} class="text">🖊️</button>
+			<button
+				onclick={() => deleteImage()}
+				class="text"
+				style="grid-row: 2; grid-column: 3; justify-self: start;align-self: start;">✘</button
+			>
+		</div>
 		{#if edit}
 			<textarea style="grid-column: 2; grid-row: 2;" bind:value={currentNoteText}></textarea>
 			<button
 				disabled={currentNoteText == note.text &&
 					currentNoteTitle == note.topic &&
-					image == undefined}
+					imageBuffer == undefined}
 				onclick={() => updateText(currentNoteText, currentNoteTitle, imageBuffer)}
 				style="grid-row: 3;grid-column: span 3; ">Update</button
 			>
 			<div class="image">
 				{#if imageBuffer === null}
-				<button class="link" onclick={() => (imageBuffer = undefined)}
-					>wiederherstellen</button
-				><label>
-					<input
-						type="file"
-						onchange={(e) => {
-							updateImage(e.currentTarget.files);
-						}}
-					/>Hochladen</label
-				>
+					<button class="link" onclick={() => (imageBuffer = undefined)}>wiederherstellen</button
+					><label>
+						<input
+							type="file"
+							onchange={(e) => {
+								updateImage(e.currentTarget.files);
+							}}
+						/>Hochladen</label
+					>
 				{:else}
 					<label>
 						<input
@@ -168,7 +183,7 @@
 			<img
 				onclick={() => (show = !show)}
 				style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
-				src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}"
+				src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}"
 			/>
 
 			<div style="grid-column: 2; grid-row: 2;">
