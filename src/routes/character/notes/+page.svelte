@@ -101,6 +101,8 @@
 		if (respones.success) {
 			notes.splice(0, 0, respones.result.note);
 			imageBuffer=undefined;
+			newNoteText='';
+			newNoteTitel='';
 		}
 	}
 </script>
