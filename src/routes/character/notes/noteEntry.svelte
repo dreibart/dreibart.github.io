@@ -130,7 +130,7 @@
 			<button
 				disabled={currentNoteText == note.text &&
 					currentNoteTitle == note.topic &&
-					imageBuffer == undefined}
+					imageBuffer === undefined}
 				onclick={() => updateText(currentNoteText, currentNoteTitle, imageBuffer)}
 				style="grid-row: 3;grid-column: span 3; ">Update</button
 			>
