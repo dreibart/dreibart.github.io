@@ -278,13 +278,8 @@ const api = {
                     text: { type: 'string' },
                     title: { type: 'string' },
                     image: {
-                        type: 'object',
+                        type: 'bytes',
                         optional: true,
-                        properties: {
-                            data: {
-                                type: 'bytes',
-                            }, type: { type: 'string' }
-                        }
                     }
                 }
             },
