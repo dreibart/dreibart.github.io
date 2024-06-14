@@ -95,7 +95,7 @@
 			text: text,
 			title,
 			image: imageBuffer
-				? { data: new Uint8Array(await imageBuffer.arrayBuffer()), type: imageBuffer!.type }
+				?  new Uint8Array(await imageBuffer.arrayBuffer())
 				: undefined
 		});
 		if (respones.success) {
