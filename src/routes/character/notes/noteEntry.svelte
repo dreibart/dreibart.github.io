@@ -182,7 +182,7 @@
 		{:else}
 			<img
 				onclick={() => (show = !show)}
-				style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
+				style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start; cursor: pointer;"
 				src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}"
 			/>
 

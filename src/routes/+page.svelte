@@ -4,6 +4,7 @@
 	import { distinct } from '$lib/misc';
 	import { browser } from '$app/environment';
 	import Logo from '$lib/logo.svelte';
+	import CharacterImage from '$lib/characterImage.svelte';
 
 	let data: Result<'/character', 'GET'>['characters'][number][] = $state([]);
 
@@ -28,14 +29,7 @@
 		}
 		loadingCharacters = false;
 	});
-	function faildLoadImage(
-		e: Event & {
-			currentTarget: EventTarget & Element;
-		}
-	) {
-		const t = e.currentTarget as HTMLImageElement;
-		t.src = 'https://dreibart.de/rpgdb/logo_neu.png';
-	}
+
 </script>
 
 {#if errorLoadingCharacters}
@@ -64,12 +58,8 @@
 			{#each data.filter((x) => x.world == w) as c}
 				<tr class="row">
 					<td class="picture"
-						><img
-							onerror={faildLoadImage}
-							class="character-image"
-							src="https://dreibart.de/rpgdb/image.php?character={c.id}"
-							alt="Charakter Bild"
-						/></td
+						><CharacterImage characterId={c.id} />
+					</td
 					>
 					<td class="name"><span>{c.name}</span></td>
 					<td class="attributes"

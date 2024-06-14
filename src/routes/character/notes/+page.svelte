@@ -94,15 +94,13 @@
 			id: characterId,
 			text: text,
 			title,
-			image: imageBuffer
-				?  new Uint8Array(await imageBuffer.arrayBuffer())
-				: undefined
+			image: imageBuffer ? new Uint8Array(await imageBuffer.arrayBuffer()) : undefined
 		});
 		if (respones.success) {
 			notes.splice(0, 0, respones.result.note);
-			imageBuffer=undefined;
-			newNoteText='';
-			newNoteTitel='';
+			imageBuffer = undefined;
+			newNoteText = '';
+			newNoteTitel = '';
 		}
 	}
 </script>
@@ -146,11 +144,15 @@
 				{/if}
 			</div>
 		</label>
-		<button onclick={()=>{
+		<button
+			onclick={()=>{
 		newNote(characterId!, newNoteTitel, newNoteText)
-	}}>Anlegen</button>
+	}}
+			disabled={newNoteText == '' && newNoteTitel == '' }
+			>Anlegen</button
+		>
 	</article>
-	{#each notes as note, i (note?.id??i)}
+	{#each notes as note, i (note?.id ?? i)}
 		<div class="entry" animate:flip in:fade out:fade>
 			<NoteEntry {characterId} bind:note={notes[i]} />
 		</div>
@@ -160,8 +162,7 @@
 <style lang="scss">
 	.entry :global(.image) {
 		position: relative;
-		:global(label){
-
+		:global(label) {
 			cursor: pointer;
 		}
 		width: 6rem;
