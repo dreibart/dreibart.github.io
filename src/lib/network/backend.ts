@@ -81,6 +81,7 @@ const api = {
                                 name: { type: 'string' },
                                 type: { type: 'string' },
                                 world: { type: 'string' },
+                                worldId: { type: 'number' },
                                 "attribute-points": {
                                     type: 'object',
                                     properties: {

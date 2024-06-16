@@ -7,7 +7,7 @@
 	import CharacterImage from '$lib/characterImage.svelte';
 
 	let data: Result<'/character', 'GET'>['characters'][number][] = $state([]);
-
+	let searchQuery = $state('');
 	let loadingCharacters = $state(false);
 	let errorLoadingCharacters = $state(false);
 	onMount(async () => {
@@ -29,7 +29,6 @@
 		}
 		loadingCharacters = false;
 	});
-
 </script>
 
 {#if errorLoadingCharacters}
@@ -39,7 +38,7 @@
 <Logo />
 
 <h1 aria-busy={loadingCharacters}>Charactere</h1>
-
+<input bind:value={searchQuery} type="text" />
 <table>
 	<thead>
 		<tr>
@@ -51,37 +50,36 @@
 		</tr>
 	</thead>
 	<tbody>
-		{#each distinct(...data.map((x) => x.world)).sort() as w}
+		{#each distinct(...data.map((x) => [x.worldId,x.world]as const)).sort(([a],[b])=>a-b) as w}
 			<tr class="header">
-				<td colspan="5"><strong>{w}</strong></td>
+				<td colspan="5"><strong>{w[1]}</strong></td>
 			</tr>
-			{#each data.filter((x) => x.world == w) as c}
-				<tr class="row">
-					<td class="picture"
-						><CharacterImage characterId={c.id} />
-					</td
-					>
-					<td class="name"><span>{c.name}</span></td>
-					<td class="attributes"
-						><span
-							>{c['attribute-points'].used} / {c['attribute-points'].available +
-								c['attribute-points'].used}</span
-						>
-						<small>
-							(verfügbar {c['attribute-points'].available})
-						</small>
-					</td>
-					<td class="skills">
-						<span
-							>{c['skill-points'].used} / {c['skill-points'].available +
-								c['skill-points'].used}</span
-						>
-						<small>
-							(verfügbar {c['skill-points'].available})
-						</small>
-					</td>
-					<td class="selection"><a href="?character-id={c.id}">Auswählen…</a></td>
-				</tr>
+			{#each data.filter((x) => x.worldId == w[0]) as c}
+				{#if searchQuery.split(' ').some((p) => c.name.includes(p)||c.type.includes(p)) || searchQuery == ''}
+					<tr class="row">
+						<td class="picture"><CharacterImage characterId={c.id} /> </td>
+						<td class="name"><span>{c.name}</span></td>
+						<td class="attributes"
+							><span
+								>{c['attribute-points'].used} / {c['attribute-points'].available +
+									c['attribute-points'].used}</span
+							>
+							<small>
+								(verfügbar {c['attribute-points'].available})
+							</small>
+						</td>
+						<td class="skills">
+							<span
+								>{c['skill-points'].used} / {c['skill-points'].available +
+									c['skill-points'].used}</span
+							>
+							<small>
+								(verfügbar {c['skill-points'].available})
+							</small>
+						</td>
+						<td class="selection"><a href="?character-id={c.id}">Auswählen…</a></td>
+					</tr>
+				{/if}
 			{/each}
 		{/each}
 	</tbody>
