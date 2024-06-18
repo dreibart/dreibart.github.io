@@ -1,15 +1,88 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { requestFromBackend, type Result } from '$lib/network/backend';
-	import { distinct } from '$lib/misc';
+	import { distinct, distinctBy, highlight } from '$lib/misc';
 	import { browser } from '$app/environment';
 	import Logo from '$lib/logo.svelte';
 	import CharacterImage from '$lib/characterImage.svelte';
+	import DOMPurify from 'dompurify';
 
 	let data: Result<'/character', 'GET'>['characters'][number][] = $state([]);
 	let searchQuery = $state('');
+
 	let loadingCharacters = $state(false);
 	let errorLoadingCharacters = $state(false);
+
+	let worlds = $derived.by(() => {
+		return distinctBy(([f]) => f, ...data.map((x) => [x.worldId, x.world] as const));
+	});
+
+	let filtered = $derived.by(() => {
+		function mergeIntervals(
+			intervals: (readonly [number, number])[]
+		): (readonly [number, number])[] {
+			if (intervals.length === 0) return [];
+
+			// Zuerst die Intervalle nach dem Startwert sortieren
+			intervals.sort((a, b) => a[0] - b[0]);
+
+			const merged: (readonly [number, number])[] = [];
+			let current = intervals[0];
+
+			for (let i = 1; i < intervals.length; i++) {
+				const [currentStart, currentEnd] = current;
+				const [nextStart, nextEnd] = intervals[i];
+
+				if (currentEnd > nextStart) {
+					// Wenn die Intervalle sich überlappen, zusammenfassen
+					current = [currentStart, Math.max(currentEnd, nextEnd)];
+				} else {
+					// Andernfalls das aktuelle Intervall speichern und zum nächsten übergehen
+					merged.push(current);
+					current = intervals[i];
+				}
+			}
+
+			// Das letzte Intervall hinzufügen
+			merged.push(current);
+
+			return merged;
+		}
+
+		const parts = searchQuery
+			.split(/(^ +)|((?<!>[^\\]) +)/gi)
+			.map((x) => (x??"").trim())
+			.filter((x) => x.length > 0)
+			.map((x) => new RegExp(x, 'gi'));
+
+		const filtred = data.flatMap((char) => {
+			const name = char.name;
+			const type = char.type;
+			const isMatch = parts.every((p) => {
+				return p.test(name) || p.test(type);
+			});
+			if (!isMatch) {
+				return [];
+			}
+			const nameIndexes = mergeIntervals(
+				parts.flatMap((reg) => {
+					const nameMatches = [...name.matchAll(new RegExp(reg))];
+					return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
+				})
+			);
+			const typeIndexes = mergeIntervals(
+				parts.flatMap((reg) => {
+					const nameMatches = type.matchAll(new RegExp(reg));
+					return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
+				})
+			);
+			console.log(typeIndexes);
+			return [{ ...char, typeIndexes, nameIndexes }];
+		});
+
+		return filtred;
+	});
+
 	onMount(async () => {
 		loadingCharacters = true;
 
@@ -44,21 +117,24 @@
 		<tr>
 			<th></th>
 			<th>Name</th>
+			<th>Type</th>
 			<th>Attributpunkte</th>
 			<th>Fertigkeitspunkte</th>
 			<th></th>
 		</tr>
 	</thead>
 	<tbody>
-		{#each distinct(...data.map((x) => [x.worldId,x.world]as const)).sort(([a],[b])=>a-b) as w}
-			<tr class="header">
-				<td colspan="5"><strong>{w[1]}</strong></td>
-			</tr>
-			{#each data.filter((x) => x.worldId == w[0]) as c}
-				{#if searchQuery.split(' ').some((p) => c.name.includes(p)||c.type.includes(p)) || searchQuery == ''}
+		{#each worlds as [worldId, worldName]}
+			{@const chars = filtered.filter((x) => x.worldId == worldId)}
+			{#if chars.length > 0}
+				<tr class="header">
+					<td colspan="5"><strong>{worldName}</strong></td>
+				</tr>
+				{#each chars as c}
 					<tr class="row">
 						<td class="picture"><CharacterImage characterId={c.id} /> </td>
-						<td class="name"><span>{c.name}</span></td>
+						<td class="name"><span>{@html DOMPurify.sanitize(highlight(c.name, '<span class="highlight">', '</span>', c.nameIndexes))}</span></td>
+						<td class="name"><span>{@html DOMPurify.sanitize(highlight(c.type, '<span class="highlight">', '</span>', c.typeIndexes))}</span></td>
 						<td class="attributes"
 							><span
 								>{c['attribute-points'].used} / {c['attribute-points'].available +
@@ -79,13 +155,20 @@
 						</td>
 						<td class="selection"><a href="?character-id={c.id}">Auswählen…</a></td>
 					</tr>
-				{/if}
-			{/each}
+				{/each}
+			{/if}
 		{/each}
 	</tbody>
 </table>
 
 <style lang="scss">
+
+	table :global(.highlight){
+		border: 1px solid var(--pico-color-yellow-100);
+		border-radius: var(--pico-border-radius);
+		background-color: var(--pico-color-yellow-550);
+		color: #fff;
+	}
 	th {
 		display: none;
 	}

@@ -2,7 +2,7 @@
 
 );
 
-
+@use "@picocss/pico/scss/colors/utilities";
 
 a[aria-disabled=true] {
     color: var(--pico-muted-color);
