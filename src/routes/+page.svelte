@@ -6,9 +6,17 @@
 	import Logo from '$lib/logo.svelte';
 	import CharacterImage from '$lib/characterImage.svelte';
 	import DOMPurify from 'dompurify';
+	import { fade } from 'svelte/transition';
 
 	let data: Result<'/character', 'GET'>['characters'][number][] = $state([]);
+	let showFilter = $state(false);
 	let searchQuery = $state('');
+	let filterMinAttributes: undefined | number = $state();
+	let filterMaxAttributes: undefined | number = $state();
+	let filterMinSkills: undefined | number = $state();
+	let filterMaxSkills: undefined | number = $state();
+
+	let selectedWorlds: number[] = $state([]);
 
 	let loadingCharacters = $state(false);
 	let errorLoadingCharacters = $state(false);
@@ -51,7 +59,7 @@
 
 		const parts = searchQuery
 			.split(/(^ +)|((?<!>[^\\]) +)/gi)
-			.map((x) => (x??"").trim())
+			.map((x) => (x ?? '').trim())
 			.filter((x) => x.length > 0)
 			.map((x) => new RegExp(x, 'gi'));
 
@@ -62,6 +70,18 @@
 				return p.test(name) || p.test(type);
 			});
 			if (!isMatch) {
+				return [];
+			}
+			if (filterMaxAttributes != undefined && char['attribute-points'].used > filterMaxAttributes) {
+				return [];
+			}
+			if (filterMinAttributes != undefined && char['attribute-points'].used < filterMinAttributes) {
+				return [];
+			}
+			if (filterMaxSkills != undefined && char['skill-points'].used > filterMaxSkills) {
+				return [];
+			}
+			if (filterMinSkills != undefined && char['skill-points'].used < filterMinSkills) {
 				return [];
 			}
 			const nameIndexes = mergeIntervals(
@@ -111,7 +131,58 @@
 <Logo />
 
 <h1 aria-busy={loadingCharacters}>Charactere</h1>
-<input bind:value={searchQuery} type="text" />
+
+<label>
+	<input type="checkbox" bind:checked={showFilter} />
+	Filter
+</label>
+{#if showFilter}
+	<aside in:fade out:fade>
+		<input bind:value={searchQuery} type="text" />
+
+		<details class="dropdown">
+			<summary
+				>{selectedWorlds.length == 0 || selectedWorlds.length == worlds.length
+					? 'Jede Welt'
+					: selectedWorlds.map((id) => worlds.filter((x) => x[0] == id)[0][1]).join(', ')}</summary
+			>
+
+			<ul>
+				{#each worlds as [id, name]}
+					<li>
+						<label class:muted={filtered.filter((x) => x.worldId == id).length}>
+							<input value={id} type="checkbox" bind:group={selectedWorlds} />
+							{name} ({filtered.filter((x) => x.worldId == id).length})
+						</label>
+					</li>
+				{/each}
+			</ul>
+		</details>
+		<div>Attribute</div>
+		<div role="group">
+			<label>
+				Min.
+				<input type="number" bind:value={filterMinAttributes} />
+			</label>
+			<label>
+				Max.
+				<input type="number" bind:value={filterMaxAttributes} />
+			</label>
+		</div>
+		<div>Fertigkeiten</div>
+		<div role="group">
+			<label>
+				Min.
+				<input type="number" bind:value={filterMinSkills} />
+			</label>
+			<label>
+				Max.
+				<input type="number" bind:value={filterMaxSkills} />
+			</label>
+		</div>
+	</aside>
+{/if}
+
 <table>
 	<thead>
 		<tr>
@@ -126,15 +197,27 @@
 	<tbody>
 		{#each worlds as [worldId, worldName]}
 			{@const chars = filtered.filter((x) => x.worldId == worldId)}
-			{#if chars.length > 0}
+			{#if chars.length > 0 && (selectedWorlds.length == 0 || selectedWorlds.includes(worldId))}
 				<tr class="header">
 					<td colspan="5"><strong>{worldName}</strong></td>
 				</tr>
 				{#each chars as c}
 					<tr class="row">
 						<td class="picture"><CharacterImage characterId={c.id} /> </td>
-						<td class="name"><span>{@html DOMPurify.sanitize(highlight(c.name, '<span class="highlight">', '</span>', c.nameIndexes))}</span></td>
-						<td class="name"><span>{@html DOMPurify.sanitize(highlight(c.type, '<span class="highlight">', '</span>', c.typeIndexes))}</span></td>
+						<td class="name"
+							><span
+								>{@html DOMPurify.sanitize(
+									highlight(c.name, '<span class="highlight">', '</span>', c.nameIndexes)
+								)}</span
+							></td
+						>
+						<td class="name"
+							><span
+								>{@html DOMPurify.sanitize(
+									highlight(c.type, '<span class="highlight">', '</span>', c.typeIndexes)
+								)}</span
+							></td
+						>
 						<td class="attributes"
 							><span
 								>{c['attribute-points'].used} / {c['attribute-points'].available +
@@ -162,8 +245,7 @@
 </table>
 
 <style lang="scss">
-
-	table :global(.highlight){
+	table :global(.highlight) {
 		border: 1px solid var(--pico-color-yellow-100);
 		border-radius: var(--pico-border-radius);
 		background-color: var(--pico-color-yellow-550);
