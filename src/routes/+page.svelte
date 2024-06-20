@@ -131,6 +131,7 @@
 <Logo />
 
 <h1 aria-busy={loadingCharacters}>Charactere</h1>
+<article>
 
 <label>
 	<input type="checkbox" bind:checked={showFilter} />
@@ -182,6 +183,7 @@
 		</div>
 	</aside>
 {/if}
+</article>
 
 <table>
 	<thead>
