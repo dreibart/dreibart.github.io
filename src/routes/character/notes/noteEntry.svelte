@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { highlight } from '$lib/misc';
 	import { requestFromBackend, type Result } from '$lib/network/backend';
 	import type { Note } from './+page.svelte';
 	import DOMPurify from 'dompurify';
@@ -9,15 +10,77 @@
 	let show = $state(false);
 	let {
 		note = $bindable(),
-		characterId
+		characterId,
+		searchQuery
 	}: {
 		characterId: number;
 		note: Note;
+		searchQuery: string;
 	} = $props();
 
 	let currentNoteText: string = $state('');
 	let currentNoteTitle: string = $state('');
 	let imageBuffer: undefined | null | ArrayBuffer = $state();
+
+	let [titleIndexes, textIndexes] = $derived.by(() => {
+		function mergeIntervals(
+			intervals: (readonly [number, number])[]
+		): (readonly [number, number])[] {
+			if (intervals.length === 0) return [];
+
+			// Zuerst die Intervalle nach dem Startwert sortieren
+			intervals.sort((a, b) => a[0] - b[0]);
+
+			const merged: (readonly [number, number])[] = [];
+			let current = intervals[0];
+
+			for (let i = 1; i < intervals.length; i++) {
+				const [currentStart, currentEnd] = current;
+				const [nextStart, nextEnd] = intervals[i];
+
+				if (currentEnd > nextStart) {
+					// Wenn die Intervalle sich überlappen, zusammenfassen
+					current = [currentStart, Math.max(currentEnd, nextEnd)];
+				} else {
+					// Andernfalls das aktuelle Intervall speichern und zum nächsten übergehen
+					merged.push(current);
+					current = intervals[i];
+				}
+			}
+
+			// Das letzte Intervall hinzufügen
+			merged.push(current);
+
+			return merged;
+		}
+		const parts = searchQuery
+			.split(/(^ +)|((?<!>[^\\]) +)/gi)
+			.map((x) => (x ?? '').trim())
+			.filter((x) => x.length > 0)
+			.map((x) => new RegExp(x, 'gi'));
+		const text = currentNoteText;
+		const title = currentNoteTitle;
+		const isMatch = parts.every((p) => {
+			return p.test(title) || p.test(text);
+		});
+		if (!isMatch) {
+			return [];
+		}
+
+		const titleIndexes = mergeIntervals(
+			parts.flatMap((reg) => {
+				const nameMatches = [...title.matchAll(new RegExp(reg))];
+				return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
+			})
+		);
+		const textIndexes = mergeIntervals(
+			parts.flatMap((reg) => {
+				const nameMatches = text.matchAll(new RegExp(reg));
+				return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
+			})
+		);
+		return [titleIndexes, textIndexes];
+	});
 
 	let imageState = $state(1);
 
@@ -62,7 +125,7 @@
 				}
 			);
 			if (response.success) {
-				note = response.result.note;
+				note = { ...note, ...response.result.note };
 				imageBuffer = undefined;
 				edit = false;
 				imageState++;
@@ -91,8 +154,8 @@
 				note_id: note.id
 			}
 		);
-		if(response.success){
-			note=undefined!;
+		if (response.success) {
+			note = undefined!;
 		}
 	}
 </script>
@@ -110,7 +173,14 @@
 			{#if edit}
 				<input type="text" bind:value={currentNoteTitle} />
 			{:else}
-				<strong>{note.topic}</strong>
+				<strong>	{@html DOMPurify.sanitize(
+					marked(highlight(
+						currentNoteTitle,
+						'<span class="highlight">',
+						'</span>',
+						titleIndexes ?? []
+					))
+				)}</strong>
 			{/if}
 		</header>
 		<dialog open={show} onclick={() => (show = !show)}>
@@ -187,7 +257,14 @@
 			/>
 
 			<div style="grid-column: 2; grid-row: 2;">
-				{@html DOMPurify.sanitize(marked(currentNoteText))}
+				{@html DOMPurify.sanitize(
+					marked(highlight(
+						currentNoteText,
+						'<span class="highlight">',
+						'</span>',
+						textIndexes ?? []
+					))
+				)}
 			</div>
 		{/if}
 	</article>
@@ -221,5 +298,11 @@
 		position: absolute;
 		top: 0;
 		right: 0;
+	}
+	article :global(.highlight) {
+		border: 1px solid var(--pico-color-yellow-100);
+		border-radius: var(--pico-border-radius);
+		background-color: var(--pico-color-yellow-550);
+		color: #fff;
 	}
 </style>

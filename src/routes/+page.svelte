@@ -6,7 +6,10 @@
 	import Logo from '$lib/logo.svelte';
 	import CharacterImage from '$lib/characterImage.svelte';
 	import DOMPurify from 'dompurify';
-	import { fade } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition'; 
+	import { flip } from 'svelte/animate';
+
+	import Filter from '$lib/icons/filter.svelte';
 
 	let data: Result<'/character', 'GET'>['characters'][number][] = $state([]);
 	let showFilter = $state(false);
@@ -132,57 +135,58 @@
 
 <h1 aria-busy={loadingCharacters}>Charactere</h1>
 <article>
+	<label class="link">
+		<input type="checkbox" bind:checked={showFilter} style="display: none;" />
+		<Filter fill={showFilter} />
+	</label>
+	{#if showFilter}
+		<aside in:fade out:fade>
+			<input bind:value={searchQuery} type="search" />
 
-<label>
-	<input type="checkbox" bind:checked={showFilter} />
-	Filter
-</label>
-{#if showFilter}
-	<aside in:fade out:fade>
-		<input bind:value={searchQuery} type="text" />
+			<details class="dropdown">
+				<summary
+					>{selectedWorlds.length == 0 || selectedWorlds.length == worlds.length
+						? 'Jede Welt'
+						: selectedWorlds
+								.map((id) => worlds.filter((x) => x[0] == id)[0][1])
+								.join(', ')}</summary
+				>
 
-		<details class="dropdown">
-			<summary
-				>{selectedWorlds.length == 0 || selectedWorlds.length == worlds.length
-					? 'Jede Welt'
-					: selectedWorlds.map((id) => worlds.filter((x) => x[0] == id)[0][1]).join(', ')}</summary
-			>
-
-			<ul>
-				{#each worlds as [id, name]}
-					<li>
-						<label class:muted={filtered.filter((x) => x.worldId == id).length}>
-							<input value={id} type="checkbox" bind:group={selectedWorlds} />
-							{name} ({filtered.filter((x) => x.worldId == id).length})
-						</label>
-					</li>
-				{/each}
-			</ul>
-		</details>
-		<div>Attribute</div>
-		<div role="group">
-			<label>
-				Min.
-				<input type="number" bind:value={filterMinAttributes} />
-			</label>
-			<label>
-				Max.
-				<input type="number" bind:value={filterMaxAttributes} />
-			</label>
-		</div>
-		<div>Fertigkeiten</div>
-		<div role="group">
-			<label>
-				Min.
-				<input type="number" bind:value={filterMinSkills} />
-			</label>
-			<label>
-				Max.
-				<input type="number" bind:value={filterMaxSkills} />
-			</label>
-		</div>
-	</aside>
-{/if}
+				<ul>
+					{#each worlds as [id, name]}
+						<li>
+							<label class:muted={filtered.filter((x) => x.worldId == id).length}>
+								<input value={id} type="checkbox" bind:group={selectedWorlds} />
+								{name} ({filtered.filter((x) => x.worldId == id).length})
+							</label>
+						</li>
+					{/each}
+				</ul>
+			</details>
+			<div>Attribute</div>
+			<div role="group">
+				<label>
+					Min.
+					<input type="number" bind:value={filterMinAttributes} />
+				</label>
+				<label>
+					Max.
+					<input type="number" bind:value={filterMaxAttributes} />
+				</label>
+			</div>
+			<div>Fertigkeiten</div>
+			<div role="group">
+				<label>
+					Min.
+					<input type="number" bind:value={filterMinSkills} />
+				</label>
+				<label>
+					Max.
+					<input type="number" bind:value={filterMaxSkills} />
+				</label>
+			</div>
+		</aside>
+	{/if}
 </article>
 
 <table>
@@ -197,14 +201,14 @@
 		</tr>
 	</thead>
 	<tbody>
-		{#each worlds as [worldId, worldName]}
+		{#each worlds as [worldId, worldName] (worldId)}
 			{@const chars = filtered.filter((x) => x.worldId == worldId)}
 			{#if chars.length > 0 && (selectedWorlds.length == 0 || selectedWorlds.includes(worldId))}
-				<tr class="header">
+				<tr class="header"  in:fade out:fade>
 					<td colspan="5"><strong>{worldName}</strong></td>
 				</tr>
-				{#each chars as c}
-					<tr class="row">
+				{#each chars as c (c.id)}
+					<tr class="row"  animate:flip in:fade out:fade>
 						<td class="picture"><CharacterImage characterId={c.id} /> </td>
 						<td class="name"
 							><span
@@ -247,6 +251,15 @@
 </table>
 
 <style lang="scss">
+	article {
+		transition: background-color 200ms linear();
+
+		&:not(:has(input:checked)) {
+			box-shadow: none;
+			background-color: transparent;
+		}
+	}
+
 	table :global(.highlight) {
 		border: 1px solid var(--pico-color-yellow-100);
 		border-radius: var(--pico-border-radius);

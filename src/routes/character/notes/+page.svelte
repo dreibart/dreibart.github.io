@@ -3,7 +3,7 @@
 		-readonly [k in keyof Result<'/character/{id:number}/notes', 'GET'>['notes'][number]]: Result<
 			'/character/{id:number}/notes',
 			'GET'
-		>['notes'][number][k];
+		>['notes'][number][k] ;
 	};
 </script>
 
@@ -28,6 +28,73 @@
 	let newNoteTitel = $state('');
 	let newNoteText = $state('');
 	let imageBuffer: undefined | File = $state();
+	let searchQuery = $state('');
+
+	let filteredNotes = $derived.by(() => {
+		function mergeIntervals(
+			intervals: (readonly [number, number])[]
+		): (readonly [number, number])[] {
+			if (intervals.length === 0) return [];
+
+			// Zuerst die Intervalle nach dem Startwert sortieren
+			intervals.sort((a, b) => a[0] - b[0]);
+
+			const merged: (readonly [number, number])[] = [];
+			let current = intervals[0];
+
+			for (let i = 1; i < intervals.length; i++) {
+				const [currentStart, currentEnd] = current;
+				const [nextStart, nextEnd] = intervals[i];
+
+				if (currentEnd > nextStart) {
+					// Wenn die Intervalle sich überlappen, zusammenfassen
+					current = [currentStart, Math.max(currentEnd, nextEnd)];
+				} else {
+					// Andernfalls das aktuelle Intervall speichern und zum nächsten übergehen
+					merged.push(current);
+					current = intervals[i];
+				}
+			}
+
+			// Das letzte Intervall hinzufügen
+			merged.push(current);
+
+			return merged;
+		}
+
+		const parts = searchQuery
+			.split(/(^ +)|((?<!>[^\\]) +)/gi)
+			.map((x) => (x ?? '').trim())
+			.filter((x) => x.length > 0)
+			.map((x) => new RegExp(x, 'gi'));
+
+		const filtred = notes.flatMap((char) => {
+			const title = char.topic;
+			const text = char.text;
+			const isMatch = parts.every((p) => {
+				return p.test(title) || p.test(text);
+			});
+			if (!isMatch) {
+				return [];
+			}
+
+			const titleIndexes = mergeIntervals(
+				parts.flatMap((reg) => {
+					const nameMatches = [...title.matchAll(new RegExp(reg))];
+					return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
+				})
+			);
+			const textIndexes = mergeIntervals(
+				parts.flatMap((reg) => {
+					const nameMatches = text.matchAll(new RegExp(reg));
+					return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
+				})
+			);
+			return [{ ...char, textIndexes: textIndexes, titleIndexes: titleIndexes }];
+		});
+
+		return filtred;
+	});
 
 	let image = $derived.by(() => {
 		if (!browser || !imageBuffer) {
@@ -110,6 +177,8 @@
 {/if}
 
 {#if characterId}
+<input bind:value={searchQuery} type="search" />
+
 	<article>
 		<label>
 			Titel
@@ -148,13 +217,12 @@
 			onclick={()=>{
 		newNote(characterId!, newNoteTitel, newNoteText)
 	}}
-			disabled={newNoteText == '' && newNoteTitel == '' }
-			>Anlegen</button
+			disabled={newNoteText == '' && newNoteTitel == ''}>Anlegen</button
 		>
 	</article>
-	{#each notes as note, i (note?.id ?? i)}
+	{#each filteredNotes as note, i (note?.id ?? i)}
 		<div class="entry" animate:flip in:fade out:fade>
-			<NoteEntry {characterId} bind:note={notes[i]} />
+			<NoteEntry {characterId} bind:note={notes[i]} {searchQuery} />
 		</div>
 	{/each}
 {/if}
