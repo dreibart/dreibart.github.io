@@ -6,8 +6,8 @@
 	import Logo from '$lib/logo.svelte';
 	import CharacterImage from '$lib/characterImage.svelte';
 	import DOMPurify from 'dompurify';
-	import { fade, slide } from 'svelte/transition'; 
-	import { flip } from 'svelte/animate';
+	// import { fade, slide } from 'svelte/transition'; 
+	// import { flip } from 'svelte/animate';
 
 	import Filter from '$lib/icons/filter.svelte';
 
@@ -140,7 +140,7 @@
 		<Filter fill={showFilter} />
 	</label>
 	{#if showFilter}
-		<aside in:fade out:fade>
+		<aside >
 			<input bind:value={searchQuery} type="search" />
 
 			<details class="dropdown">
@@ -204,11 +204,11 @@
 		{#each worlds as [worldId, worldName] (worldId)}
 			{@const chars = filtered.filter((x) => x.worldId == worldId)}
 			{#if chars.length > 0 && (selectedWorlds.length == 0 || selectedWorlds.includes(worldId))}
-				<tr class="header"  in:fade out:fade>
+				<tr class="header" >
 					<td colspan="5"><strong>{worldName}</strong></td>
 				</tr>
 				{#each chars as c (c.id)}
-					<tr class="row"  animate:flip in:fade out:fade>
+					<tr class="row"  >
 						<td class="picture"><CharacterImage characterId={c.id} /> </td>
 						<td class="name"
 							><span

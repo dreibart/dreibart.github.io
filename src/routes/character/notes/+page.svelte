@@ -16,9 +16,9 @@
 	import { characterIdFromPage } from '../../+layout.svelte';
 	import NoteEntry from './noteEntry.svelte';
 	import { base64, base64url } from 'rfc4648';
-	import { crossfade, fade } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
-	import { flip } from 'svelte/animate';
+	// import { crossfade, fade } from 'svelte/transition';
+	// import { quintOut } from 'svelte/easing';
+	// import { flip } from 'svelte/animate';
 
 	let characterId: undefined | number = $state();
 
@@ -179,6 +179,8 @@
 {#if characterId}
 <input bind:value={searchQuery} type="search" />
 
+<details>
+<summary>Neue Notiz</summary>
 	<article>
 		<label>
 			Titel
@@ -190,44 +192,45 @@
 		</label>
 		<label>
 			<input
-				style="display: none;"
-				type="file"
-				onchange={(e) => {
-					updateImage(e.currentTarget.files);
-				}}
+			style="display: none;"
+			type="file"
+			onchange={(e) => {
+				updateImage(e.currentTarget.files);
+			}}
 			/>
-
+			
 			<div class="image">
 				{#if image}
-					{#await image}
-						<span aria-busy="true">Lade</span>
-					{:then i}
-						{#if i}
-							<img src={i} />
-						{:else}
-							<span>Fehler</span>
+				{#await image}
+				<span aria-busy="true">Lade</span>
+				{:then i}
+				{#if i}
+				<img src={i} />
+				{:else}
+				<span>Fehler</span>
 						{/if}
 					{/await}
-				{:else}
+					{:else}
 					<span>Bild Hinzufügen</span>
-				{/if}
-			</div>
-		</label>
+					{/if}
+				</div>
+			</label>
 		<button
 			onclick={()=>{
-		newNote(characterId!, newNoteTitel, newNoteText)
-	}}
+				newNote(characterId!, newNoteTitel, newNoteText)
+			}}
 			disabled={newNoteText == '' && newNoteTitel == ''}>Anlegen</button
-		>
-	</article>
-	{#each filteredNotes as note, i (note?.id ?? i)}
-		<div class="entry" animate:flip in:fade out:fade>
-			<NoteEntry {characterId} bind:note={notes[i]} {searchQuery} />
+			>
+		</article>
+	</details>
+		{#each filteredNotes as note, i (note?.id ?? i)}
+		<div class="entry" >
+			<NoteEntry {characterId} bind:note={filteredNotes[i]} {searchQuery} />
 		</div>
-	{/each}
-{/if}
-
-<style lang="scss">
+		{/each}
+		{/if}
+		
+		<style lang="scss">
 	.entry :global(.image) {
 		position: relative;
 		:global(label) {

@@ -478,18 +478,10 @@ class TypeError {
     }
 }
 
-function check<TSymbol extends sympolData>(symbol: TSymbol, obj: unknown): obj is ResultType<TSymbol> {
-    try {
-        assert(symbol, obj);
-        return true;
-    } catch (error) {
-        if (error instanceof TypeError) {
-            return false;
-        }
-        throw error;
-    }
-}
 
+export function logout(){
+    localStorage.removeItem('token');
+}
 
 
 function fromJsonObject<TSymbol extends sympolData>(rout: string, symbol: TSymbol, obj: unknown, path: string[] = []): ResultType<TSymbol> {
