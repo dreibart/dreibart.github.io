@@ -238,28 +238,22 @@
 			<li>
 				{#if browser}
 					<details class="dropdown">
-						<summary>Aktuell {currentUser()}</summary>
+						<summary>Angemeldet als {currentUser()}</summary>
 						<ul style="bottom:0; left:unset;right:50vw;width:min-content;height: fit-content;">
 							<li>
 								<button onclick={()=>changeUser()}>Nutzer Wechseln (Neu)</button>
 							</li>
-							{#each allLogedInUsers() as user}
-								<li>
-									<button onclick={() => changeUser(user)}>{user}</button>
-								</li>
+							{#each allLogedInUsers().filter(x=>x!== currentUser()) as user}
+							<li>
+								<button onclick={() => changeUser(user)}>Wechsel zu {user}</button>
+							</li>
 							{/each}
+							<li>
+								<button onclick={()=>logout()}>Abmelden ({currentUser()})</button>
+							</li>
 						</ul>
 					</details>
 				{/if}
-			</li>
-			<li>
-				<a
-					href={`${base}`}
-					onclick={() => {
-						logout();
-						return true;
-					}}>Logout</a
-				>
 			</li>
 		</ul>
 	</nav>

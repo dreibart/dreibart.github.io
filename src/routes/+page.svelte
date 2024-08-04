@@ -134,6 +134,7 @@
 <Logo />
 
 <h1 aria-busy={loadingCharacters}>Charactere</h1>
+<input bind:value={searchQuery} type="search" />
 <article>
 	<label class="link">
 		<input type="checkbox" bind:checked={showFilter} style="display: none;" />
@@ -141,7 +142,6 @@
 	</label>
 	{#if showFilter}
 		<aside >
-			<input bind:value={searchQuery} type="search" />
 
 			<details class="dropdown">
 				<summary

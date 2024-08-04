@@ -1,3 +1,5 @@
+import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 import * as luxon from 'luxon';
 import { base64 } from 'rfc4648';
 
@@ -516,6 +518,7 @@ export function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem(`token-${localStorage.getItem('current-user')}`);
     localStorage.removeItem('current-user');
+    goto(base, { invalidateAll: true });
 }
 export function changeUser(user?: string) {
     if (user) {
@@ -523,12 +526,13 @@ export function changeUser(user?: string) {
         if (newToken) {
             localStorage.setItem('token', newToken);
             localStorage.setItem('current-user', user);
-            location.reload();
+            goto(base, { invalidateAll: true });
         }
     } else {
         localStorage.removeItem('token');
         localStorage.removeItem('current-user');
-        location.reload();
+        goto(base, { invalidateAll: true });
+
     }
 }
 export function currentUser() {
