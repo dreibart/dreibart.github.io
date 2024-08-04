@@ -299,9 +299,11 @@
 	img {
 		max-height: 5rem;
 		object-fit: cover;
+		border-radius: var(--pico-border-radius);
 	}
 	dialog img {
 		max-height: 80vh;
+		border-radius: var(--pico-border-radius);
 	}
 	input[type='file'] {
 		display: none;
