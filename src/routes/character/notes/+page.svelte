@@ -17,6 +17,7 @@
 	import NoteEntry from './noteEntry.svelte';
 	import { base64, base64url } from 'rfc4648';
 	import Filter from '$lib/icons/filter.svelte';
+	import Add from '$lib/icons/add.svelte';
 	// import { crossfade, fade } from 'svelte/transition';
 	// import { quintOut } from 'svelte/easing';
 	// import { flip } from 'svelte/animate';
@@ -27,6 +28,7 @@
 	let errorMessage: undefined | string = $state();
 
 	let showFilter = $state(false);
+	let showAdd = $state(false);
 	let showNormalNotes = $state(true);
 	let showProposedAggreements = $state(true);
 	let showAggreements = $state(true);
@@ -200,6 +202,56 @@
 
 	<article class="filter">
 		<label class="link">
+			<input type="checkbox" bind:checked={showAdd} style="display: none;" />
+			<Add fill={showAdd} />
+		</label>
+		{#if showAdd}
+			<aside>
+				<label>
+					Titel
+					<input type="text" bind:value={newNoteTitel} />
+				</label>
+				<label>
+					Text
+					<textarea bind:value={newNoteText}></textarea>
+				</label>
+				<label>
+					<input
+						style="display: none;"
+						type="file"
+						onchange={(e) => {
+							updateImage(e.currentTarget.files);
+						}}
+					/>
+
+					<div class="image">
+						{#if image}
+							{#await image}
+								<span aria-busy="true">Lade</span>
+							{:then i}
+								{#if i}
+									<img src={i} />
+								{:else}
+									<span>Fehler</span>
+								{/if}
+							{/await}
+						{:else}
+							<span>Bild Hinzufügen</span>
+						{/if}
+					</div>
+				</label>
+				<button
+					onclick={()=>{
+					newNote(characterId!, newNoteTitel, newNoteText)
+				}}
+					disabled={newNoteText == '' && newNoteTitel == ''}>Anlegen</button
+				>
+			</aside>
+		{/if}
+	</article>
+
+	<article class="filter">
+		<label class="link">
 			<input type="checkbox" bind:checked={showFilter} style="display: none;" />
 			<Filter fill={showFilter} />
 		</label>
@@ -221,50 +273,6 @@
 		{/if}
 	</article>
 
-	<details>
-		<summary>Neue Notiz</summary>
-		<article>
-			<label>
-				Titel
-				<input type="text" bind:value={newNoteTitel} />
-			</label>
-			<label>
-				Text
-				<textarea bind:value={newNoteText}></textarea>
-			</label>
-			<label>
-				<input
-					style="display: none;"
-					type="file"
-					onchange={(e) => {
-						updateImage(e.currentTarget.files);
-					}}
-				/>
-
-				<div class="image">
-					{#if image}
-						{#await image}
-							<span aria-busy="true">Lade</span>
-						{:then i}
-							{#if i}
-								<img src={i} />
-							{:else}
-								<span>Fehler</span>
-							{/if}
-						{/await}
-					{:else}
-						<span>Bild Hinzufügen</span>
-					{/if}
-				</div>
-			</label>
-			<button
-				onclick={()=>{
-				newNote(characterId!, newNoteTitel, newNoteText)
-			}}
-				disabled={newNoteText == '' && newNoteTitel == ''}>Anlegen</button
-			>
-		</article>
-	</details>
 	{#each filteredNotes as note, i (note?.id ?? i)}
 		<div class="entry">
 			<NoteEntry {characterId} bind:note={filteredNotes[i]} {searchQuery} />
@@ -275,10 +283,15 @@
 <style lang="scss">
 	article.filter {
 		transition: background-color 200ms linear();
+		margin-top: var(--pico-spacing);
 
 		&:not(:has(input:checked)) {
 			box-shadow: none;
 			background-color: transparent;
+			display: inline;
+			margin-top: var(--pico-spacing);
+			margin-bottom: var(--pico-spacing);
+			margin-block-end: var(--pico-spacing);
 		}
 
 		& > aside {
@@ -290,18 +303,22 @@
 		margin-top: var(--pico-spacing);
 	}
 
-	.entry :global(.image) {
-		position: relative;
-		:global(label) {
-			cursor: pointer;
+	.entry {
+		margin-top: var(--pico-spacing);
+
+		:global(.image) {
+			position: relative;
+			:global(label) {
+				cursor: pointer;
+			}
+			width: 6rem;
+			height: 6rem;
+			text-align: center;
+			display: grid;
+			align-content: center;
+			justify-content: center;
+			border: solid var(--pico-border-width) var(--pico-primary);
 		}
-		width: 6rem;
-		height: 6rem;
-		text-align: center;
-		display: grid;
-		align-content: center;
-		justify-content: center;
-		border: solid var(--pico-border-width) var(--pico-primary);
 	}
 
 	img {
