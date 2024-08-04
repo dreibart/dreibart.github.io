@@ -18,6 +18,10 @@
 	import { page } from '$app/stores';
 	import {
 		OnBlockingChanged,
+		allLogedInUsers,
+		changeUser,
+		currentUser,
+		logout,
 		requestFromBackend,
 		retryBlocking,
 		type Result
@@ -89,12 +93,14 @@
 	}
 	onMount(async () => {
 		const token = $page.url.searchParams.get('apitoken');
-		console.log('cehck for token', token);
+		const token_user = $page.url.searchParams.get('user');
 		OnBlockingChanged((e) => {
 			popUpBlocker = e.isBlocking;
 		});
 
-		if (token !== null) {
+		if (token !== null && token_user !== null) {
+			window.localStorage.setItem('current-user', token_user);
+			window.localStorage.setItem(`token-${token_user}`, token);
 			window.localStorage.setItem('token', token);
 			close();
 		} else {
@@ -135,7 +141,6 @@
 					'--scrollbar-width',
 					window.innerWidth - document.documentElement.clientWidth + 'px'
 				);
-				console.log(window.innerWidth - document.documentElement.clientWidth + 'px');
 				calculateScrollPosition();
 			}
 			observer = new MutationObserver(() => {
@@ -192,7 +197,7 @@
 		</div>
 	</dialog>
 {/if}
-{#if loaded|| true}
+{#if loaded || true}
 	<main class="container">
 		<slot></slot>
 	</main>
@@ -228,6 +233,32 @@
 						}
 						showSubMenue = false;
 					}}>Notizen</a
+				>
+			</li>
+			<li>
+				{#if browser}
+					<details class="dropdown">
+						<summary>Aktuell {currentUser()}</summary>
+						<ul style="bottom:0; left:unset;right:50vw;width:min-content;height: fit-content;">
+							<li>
+								<button onclick={()=>changeUser()}>Nutzer Wechseln (Neu)</button>
+							</li>
+							{#each allLogedInUsers() as user}
+								<li>
+									<button onclick={() => changeUser(user)}>{user}</button>
+								</li>
+							{/each}
+						</ul>
+					</details>
+				{/if}
+			</li>
+			<li>
+				<a
+					href={`${base}`}
+					onclick={() => {
+						logout();
+						return true;
+					}}>Logout</a
 				>
 			</li>
 		</ul>
@@ -272,27 +303,25 @@
 	:global(body) {
 		overflow-x: hidden;
 	}
-	
-	[data-theme="light"],
-  :root:not([data-theme="dark"]) {
-    --backdrop:blur(5px) grayscale(100%) brightness(140%);
-  }
 
-  // Dark color scheme (Auto)
-  // Automatically enabled if user has Dark mode enabled
-  @media only screen and (prefers-color-scheme: dark) {
-    :root:not([data-theme]) {
-		--backdrop:blur(5px) grayscale(100%) brightness(40%);
+	[data-theme='light'],
+	:root:not([data-theme='dark']) {
+		--backdrop: blur(5px) grayscale(100%) brightness(140%);
+	}
 
-    }
-  }
+	// Dark color scheme (Auto)
+	// Automatically enabled if user has Dark mode enabled
+	@media only screen and (prefers-color-scheme: dark) {
+		:root:not([data-theme]) {
+			--backdrop: blur(5px) grayscale(100%) brightness(40%);
+		}
+	}
 
-  // Dark color scheme (Forced)
-  // Enabled if forced with data-theme="dark"
-  [data-theme="dark"] {
-	--backdrop:blur(5px) grayscale(100%) brightness(40%);
-
-  }
+	// Dark color scheme (Forced)
+	// Enabled if forced with data-theme="dark"
+	[data-theme='dark'] {
+		--backdrop: blur(5px) grayscale(100%) brightness(40%);
+	}
 	nav.sub-menu {
 		--modifier: max(100vh, -1 * (100vw - var(--scrollbar-width)));
 		&.show {
@@ -302,8 +331,7 @@
 			width: calc(3 * var(--modifier));
 			padding: calc(var(--modifier)) calc(var(--modifier));
 			border: 1px solid var(--pico-primary);
-			backdrop-filter: var(--backdrop); 
-			
+			backdrop-filter: var(--backdrop);
 		}
 		display: block;
 

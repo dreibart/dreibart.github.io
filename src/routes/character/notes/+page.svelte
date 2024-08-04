@@ -3,7 +3,7 @@
 		-readonly [k in keyof Result<'/character/{id:number}/notes', 'GET'>['notes'][number]]: Result<
 			'/character/{id:number}/notes',
 			'GET'
-		>['notes'][number][k] ;
+		>['notes'][number][k];
 	};
 </script>
 
@@ -16,6 +16,7 @@
 	import { characterIdFromPage } from '../../+layout.svelte';
 	import NoteEntry from './noteEntry.svelte';
 	import { base64, base64url } from 'rfc4648';
+	import Filter from '$lib/icons/filter.svelte';
 	// import { crossfade, fade } from 'svelte/transition';
 	// import { quintOut } from 'svelte/easing';
 	// import { flip } from 'svelte/animate';
@@ -24,6 +25,11 @@
 
 	let notes: Note[] = $state([]);
 	let errorMessage: undefined | string = $state();
+
+	let showFilter = $state(false);
+	let showNormalNotes = $state(true);
+	let showProposedAggreements = $state(true);
+	let showAggreements = $state(true);
 
 	let newNoteTitel = $state('');
 	let newNoteText = $state('');
@@ -68,9 +74,22 @@
 			.filter((x) => x.length > 0)
 			.map((x) => new RegExp(x, 'gi'));
 
-		const filtred = notes.flatMap((char) => {
-			const title = char.topic;
-			const text = char.text;
+		const filtred = notes.flatMap((note) => {
+			const title = note.topic;
+			const text = note.text;
+
+			if (
+				(!note.agreement && !showNormalNotes) ||
+				(note.agreement &&
+					'confirmation' in note.agreement &&
+					note.agreement.confirmation &&
+					!showAggreements) ||
+				(note.agreement &&
+					!('confirmation' in note.agreement && note.agreement.confirmation) &&
+					!showProposedAggreements)
+			) {
+				return [];
+			}
 			const isMatch = parts.every((p) => {
 				return p.test(title) || p.test(text);
 			});
@@ -90,7 +109,7 @@
 					return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
 				})
 			);
-			return [{ ...char, textIndexes: textIndexes, titleIndexes: titleIndexes }];
+			return [{ ...note, textIndexes: textIndexes, titleIndexes: titleIndexes }];
 		});
 
 		return filtred;
@@ -177,60 +196,100 @@
 {/if}
 
 {#if characterId}
-<input bind:value={searchQuery} type="search" />
+	<input bind:value={searchQuery} type="search" />
 
-<details>
-<summary>Neue Notiz</summary>
-	<article>
-		<label>
-			Titel
-			<input type="text" bind:value={newNoteTitel} />
+	<article class="filter">
+		<label class="link">
+			<input type="checkbox" bind:checked={showFilter} style="display: none;" />
+			<Filter fill={showFilter} />
 		</label>
-		<label>
-			Text
-			<textarea bind:value={newNoteText}></textarea>
-		</label>
-		<label>
-			<input
-			style="display: none;"
-			type="file"
-			onchange={(e) => {
-				updateImage(e.currentTarget.files);
-			}}
-			/>
-			
-			<div class="image">
-				{#if image}
-				{#await image}
-				<span aria-busy="true">Lade</span>
-				{:then i}
-				{#if i}
-				<img src={i} />
-				{:else}
-				<span>Fehler</span>
-						{/if}
-					{/await}
+		{#if showFilter}
+			<aside>
+				<label>
+					<input type="checkbox" role="switch" bind:checked={showAggreements} />
+					Abgeschlossene Verträge Anzeigen
+				</label>
+				<label>
+					<input type="checkbox" role="switch" bind:checked={showProposedAggreements} />
+					Vorgeschlagene Verträge Anzeigen
+				</label>
+				<label>
+					<input type="checkbox" role="switch" bind:checked={showNormalNotes} />
+					Normale Notizen Anzeigen
+				</label>
+			</aside>
+		{/if}
+	</article>
+
+	<details>
+		<summary>Neue Notiz</summary>
+		<article>
+			<label>
+				Titel
+				<input type="text" bind:value={newNoteTitel} />
+			</label>
+			<label>
+				Text
+				<textarea bind:value={newNoteText}></textarea>
+			</label>
+			<label>
+				<input
+					style="display: none;"
+					type="file"
+					onchange={(e) => {
+						updateImage(e.currentTarget.files);
+					}}
+				/>
+
+				<div class="image">
+					{#if image}
+						{#await image}
+							<span aria-busy="true">Lade</span>
+						{:then i}
+							{#if i}
+								<img src={i} />
+							{:else}
+								<span>Fehler</span>
+							{/if}
+						{/await}
 					{:else}
-					<span>Bild Hinzufügen</span>
+						<span>Bild Hinzufügen</span>
 					{/if}
 				</div>
 			</label>
-		<button
-			onclick={()=>{
+			<button
+				onclick={()=>{
 				newNote(characterId!, newNoteTitel, newNoteText)
 			}}
-			disabled={newNoteText == '' && newNoteTitel == ''}>Anlegen</button
+				disabled={newNoteText == '' && newNoteTitel == ''}>Anlegen</button
 			>
 		</article>
 	</details>
-		{#each filteredNotes as note, i (note?.id ?? i)}
-		<div class="entry" >
+	{#each filteredNotes as note, i (note?.id ?? i)}
+		<div class="entry">
 			<NoteEntry {characterId} bind:note={filteredNotes[i]} {searchQuery} />
 		</div>
-		{/each}
-		{/if}
-		
-		<style lang="scss">
+	{/each}
+{/if}
+
+<style lang="scss">
+	article.filter {
+		transition: background-color 200ms linear();
+
+		&:not(:has(input:checked)) {
+			box-shadow: none;
+			background-color: transparent;
+		}
+
+		& > aside {
+			margin-top: var(--pico-spacing);
+		}
+	}
+
+	input[type='search'] {
+		margin-top: var(--pico-spacing);
+	}
+
 	.entry :global(.image) {
 		position: relative;
 		:global(label) {

@@ -161,8 +161,21 @@
 </script>
 
 {#if note}
-	<article>
+	<article class:agreement={note.agreement && 'confirmation' in note.agreement && note.agreement.confirmation}
+	class:agreementRequest={note.agreement && !('confirmation' in note.agreement && note.agreement.confirmation)}
+	>
 		<header>
+			{#if note.agreement}
+				{#if 'confirmation' in note.agreement && note.agreement.confirmation}
+					<span style="color:var(--pico-primary)"
+						>Vertrag angenomen von {note.agreement.gamemaster} am {note.agreement.confirmation.toLocaleString()} (angefragt am {note.agreement.request.toLocaleString()})</span
+					>
+				{:else}
+					<span style="color:var(--pico-secondary)"
+						>Vertrag angefragt am {note.agreement.request.toLocaleString()}</span
+					>
+				{/if}
+			{/if}
 			{#if note.changed}
 				<span style="float: right;"
 					>{note.changed.toLocaleString()} ({note.created.toLocaleString()})</span
@@ -173,14 +186,13 @@
 			{#if edit}
 				<input type="text" bind:value={currentNoteTitle} />
 			{:else}
-				<strong>	{@html DOMPurify.sanitize(
-					marked(highlight(
-						currentNoteTitle,
-						'<span class="highlight">',
-						'</span>',
-						titleIndexes ?? []
-					))
-				)}</strong>
+				<strong>
+					{@html DOMPurify.sanitize(
+						marked(
+							highlight(currentNoteTitle, '<span class="highlight">', '</span>', titleIndexes ?? [])
+						)
+					)}</strong
+				>
 			{/if}
 		</header>
 		<dialog open={show} onclick={() => (show = !show)}>
@@ -258,12 +270,9 @@
 
 			<div style="grid-column: 2; grid-row: 2;">
 				{@html DOMPurify.sanitize(
-					marked(highlight(
-						currentNoteText,
-						'<span class="highlight">',
-						'</span>',
-						textIndexes ?? []
-					))
+					marked(
+						highlight(currentNoteText, '<span class="highlight">', '</span>', textIndexes ?? [])
+					)
 				)}
 			</div>
 		{/if}
@@ -272,6 +281,12 @@
 
 <style lang="scss">
 	article {
+		&.agreement {
+			border:3px solid  var(--pico-primary);
+		}
+		&.agreementRequest {
+			border:3px solid  var(--pico-secondary);
+		}
 		display: grid;
 		gap: var(--pico-spacing);
 		grid-template-columns: auto 1fr auto;

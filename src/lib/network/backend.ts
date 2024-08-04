@@ -59,9 +59,42 @@ const noteSymbol = {
         image: {
             type: 'number',
             optional: true,
+        },
+        agreement: {
+            type: 'one-off',
+            optional: true,
+            select: [
+                {
+                    type: 'object',
+                    properties: {
+                        confirmation: {
+                            type: 'date-time'
+                        },
+                        gamemaster: {
+                            type: 'string'
+                        },
+                        request: {
+                            type: 'date-time'
+                        },
+                        player: {
+                            type: 'string'
+                        },
+                    }
+                }, {
+                    type: 'object',
+                    properties: {
+                        request: {
+                            type: 'date-time'
+                        },
+                        player: {
+                            type: 'string'
+                        },
+                    }
+                }
+            ]
         }
     }
-} as const;
+} as const satisfies sympolData;
 const api = {
     '/character': {
         'GET': {
@@ -479,8 +512,31 @@ class TypeError {
 }
 
 
-export function logout(){
+export function logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem(`token-${localStorage.getItem('current-user')}`);
+    localStorage.removeItem('current-user');
+}
+export function changeUser(user?: string) {
+    if (user) {
+        const newToken = localStorage.getItem(`token-${user}`);
+        if (newToken) {
+            localStorage.setItem('token', newToken);
+            localStorage.setItem('current-user', user);
+            location.reload();
+        }
+    } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('current-user');
+        location.reload();
+    }
+}
+export function currentUser() {
+    return localStorage.getItem('current-user');
+}
+
+export function allLogedInUsers() {
+    return Array.from({ length: localStorage.length }).map((_, i) => localStorage.key(i)).filter(x => x?.startsWith('token-')).map(x => x!.substring('token-'.length));
 }
 
 
