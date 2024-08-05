@@ -218,7 +218,7 @@
 								)}</span
 							></td
 						>
-						<td class="name"
+						<td class="type"
 							><span
 								>{@html DOMPurify.sanitize(
 									highlight(c.type, '<span class="highlight">', '</span>', c.typeIndexes)
@@ -285,6 +285,7 @@
 
 			grid-template-areas:
 				'image name select'
+				'image type select'
 				// 'image select select select'
 				'skill skill skill'
 				'attribute attribute attribute';
@@ -309,6 +310,9 @@
 
 			.name {
 				grid-area: name;
+			}
+			.type {
+				grid-area: type;
 			}
 
 			.selection {
@@ -341,6 +345,7 @@
 
 			& > * {
 				border: none;
+				min-width: 0;
 			}
 			padding-top: var(--pico-spacing);
 			padding-bottom: calc(var(--pico-spacing) / 2);

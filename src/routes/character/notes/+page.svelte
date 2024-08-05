@@ -77,7 +77,10 @@
 			.filter((x) => x.length > 0)
 			.map((x) => new RegExp(x, 'gi'));
 
-		const filtred = notes.flatMap((note) => {
+		const filtred = notes.flatMap((note, originalIndex) => {
+			if (!note) {
+				return [];
+			}
 			const title = note.topic;
 			const text = note.text;
 
@@ -112,7 +115,7 @@
 					return [...nameMatches].map((x) => [x.index, x.index + x[0].length] as const);
 				})
 			);
-			return [{ ...note, textIndexes: textIndexes, titleIndexes: titleIndexes }];
+			return [{ ...note, textIndexes: textIndexes, titleIndexes: titleIndexes, originalIndex }];
 		});
 
 		return filtred;
@@ -195,7 +198,10 @@
 </script>
 
 {#if errorMessage}
-	<dialog open><p>{errorMessage}</p><a href="{base}">Zurück zur Characterauswahl</a></dialog>
+	<dialog open>
+		<p>{errorMessage}</p>
+		<a href={base}>Zurück zur Characterauswahl</a>
+	</dialog>
 {/if}
 
 {#if characterId}
@@ -276,7 +282,7 @@
 
 	{#each filteredNotes as note, i (note?.id ?? i)}
 		<div class="entry">
-			<NoteEntry {characterId} bind:note={filteredNotes[i]} {searchQuery} />
+			<NoteEntry {characterId} bind:note={notes[note?.originalIndex]} {searchQuery} />
 		</div>
 	{/each}
 {/if}

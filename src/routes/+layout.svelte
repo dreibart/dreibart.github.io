@@ -239,17 +239,19 @@
 				{#if browser}
 					<details class="dropdown">
 						<summary>Angemeldet als {currentUser()}</summary>
-						<ul style="bottom:45px; margin:0; left:unset;right:0;width:min-content;height: fit-content;">
+						<ul
+							style="bottom:45px; margin:0; left:unset;right:0;width:min-content;height: fit-content;"
+						>
 							<li>
-								<button onclick={()=>changeUser()}>Nutzer Wechseln (Neu)</button>
+								<button onclick={() => changeUser()}>Nutzer Wechseln (Neu)</button>
 							</li>
-							{#each allLogedInUsers().filter(x=>x!== currentUser()) as user}
-							<li>
-								<button onclick={() => changeUser(user)}>Wechsel zu {user}</button>
-							</li>
+							{#each allLogedInUsers().filter((x) => x !== currentUser()) as user}
+								<li>
+									<button onclick={() => changeUser(user)}>Wechsel zu {user}</button>
+								</li>
 							{/each}
 							<li>
-								<button onclick={()=>logout()}>Abmelden ({currentUser()})</button>
+								<button onclick={() => logout()}>Abmelden ({currentUser()})</button>
 							</li>
 						</ul>
 					</details>
@@ -399,6 +401,31 @@
 			grid-area: img;
 			margin-right: 0.5rem;
 			margin-left: var(--pico-nav-element-spacing-vertical);
+		}
+	}
+	details.dropdown > ul {
+		& > li {
+			padding: 0 !important;
+			margin: 0 !important;
+			display: grid;
+			&::before {
+				content: unset;
+			}
+			&::after {
+				content: unset;
+			}
+			& > button {
+				border-radius: 0;
+				background-color: transparent;
+				margin: 0;
+				border-bottom: none;
+				border-left: none;
+				border-right: none;
+				padding: var(--pico-spacing);
+			}
+			&:last-child > button {
+				border-top: none;
+			}
 		}
 	}
 </style>

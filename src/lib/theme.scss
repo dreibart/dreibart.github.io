@@ -99,3 +99,9 @@ button.link {
         --pico-text-decoration: underline;
     }
 }
+
+
+svg.icon{
+    transition: all 0.5s;
+    fill: transparent;
+}

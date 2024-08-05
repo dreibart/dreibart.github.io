@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import Delete from '$lib/icons/delete.svelte';
+	import Edit from '$lib/icons/edit.svelte';
+	import Remove from '$lib/icons/remove.svelte';
 	import { highlight } from '$lib/misc';
 	import { requestFromBackend, type Result } from '$lib/network/backend';
 	import type { Note } from './+page.svelte';
@@ -8,13 +11,14 @@
 
 	let edit = $state(false);
 	let show = $state(false);
+	let showDelete = $state(false);
 	let {
 		note = $bindable(),
 		characterId,
 		searchQuery
 	}: {
 		characterId: number;
-		note: Note;
+		note: Note | undefined;
 		searchQuery: string;
 	} = $props();
 
@@ -103,8 +107,8 @@
 		});
 	});
 	$effect(() => {
-		currentNoteText = note.text;
-		currentNoteTitle = note.topic;
+		currentNoteText = note?.text ?? '';
+		currentNoteTitle = note?.topic ?? '';
 	});
 
 	async function updateText(
@@ -112,6 +116,9 @@
 		title: string | undefined,
 		buffer: ArrayBuffer | undefined | null
 	) {
+		if (!note) {
+			return;
+		}
 		try {
 			const response = await requestFromBackend(
 				'/character/{id:number}/notes/{note_id:number}',
@@ -145,7 +152,10 @@
 		}
 		imageBuffer = await file.arrayBuffer();
 	}
-	async function deleteImage() {
+	async function deleteNote() {
+		if (!note) {
+			return;
+		}
 		const response = await requestFromBackend(
 			'/character/{id:number}/notes/{note_id:number}',
 			'DELETE',
@@ -155,20 +165,25 @@
 			}
 		);
 		if (response.success) {
-			note = undefined!;
+			note = undefined;
 		}
 	}
 </script>
 
 {#if note}
-	<article class:agreement={note.agreement && 'confirmation' in note.agreement && note.agreement.confirmation}
-	class:agreementRequest={note.agreement && !('confirmation' in note.agreement && note.agreement.confirmation)}
+	<article
+		class:agreement={note.agreement &&
+			'confirmation' in note.agreement &&
+			note.agreement.confirmation}
+		class:agreementRequest={note.agreement &&
+			!('confirmation' in note.agreement && note.agreement.confirmation)}
 	>
 		<header>
 			{#if note.agreement}
 				{#if 'confirmation' in note.agreement && note.agreement.confirmation}
 					<span style="color:var(--pico-primary)"
-						>Vertrag angenommen von {note.agreement.gamemaster} am {note.agreement.confirmation.toLocaleString()} (angefragt am {note.agreement.request.toLocaleString()})</span
+						>Vertrag angenommen von {note.agreement.gamemaster} am {note.agreement.confirmation.toLocaleString()}
+						(angefragt am {note.agreement.request.toLocaleString()})</span
 					>
 				{:else}
 					<span style="color:var(--pico-secondary)"
@@ -199,24 +214,40 @@
 			<img src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}" />
 		</dialog>
 
-		<div style="grid-row: 2; grid-column: 3; justify-self: start;align-self: start;">
-			<button onclick={() => (edit = !edit)} class="text">🖊️</button>
+		<div class="editcontrols">
+			<button onclick={() => (edit = !edit)} class="text"><Edit fill={edit} /></button>
+			<dialog open={showDelete} style="flex-direction: column;">
+				<p>Wollen Sie die Notiz wirklich Löschen?</p>
+				<p>
+					<button
+						style="min-width: 10em;"
+						onclick={() => {
+							deleteNote();
+							showDelete = false;
+						}}>Ja</button
+					>
+				</p>
+				<p>
+					<button style="min-width: 10em;" onclick={() => (showDelete = false)}>Nein</button>
+				</p>
+			</dialog>
 			<button
-				onclick={() => deleteImage()}
 				class="text"
-				style="grid-row: 2; grid-column: 3; justify-self: start;align-self: start;">✘</button
+				onclick={() => (showDelete = true)}
+				style="grid-row: 2; grid-column: 3; justify-self: start;align-self: start;"
+				><Delete /></button
 			>
 		</div>
 		{#if edit}
-			<textarea style="grid-column: 2; grid-row: 2;" bind:value={currentNoteText}></textarea>
+			<textarea class="main" style="min-height: 30em;" bind:value={currentNoteText}></textarea>
 			<button
 				disabled={currentNoteText == note.text &&
 					currentNoteTitle == note.topic &&
 					imageBuffer === undefined}
 				onclick={() => updateText(currentNoteText, currentNoteTitle, imageBuffer)}
-				style="grid-row: 3;grid-column: span 3; ">Update</button
+				class="footer">Update</button
 			>
-			<div class="image">
+			<div class="image imagearea">
 				{#if imageBuffer === null}
 					<button class="link" onclick={() => (imageBuffer = undefined)}>wiederherstellen</button
 					><label>
@@ -248,7 +279,7 @@
 							{/await}
 						{:else}
 							<img
-								style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start;"
+								alt=""
 								src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}"
 							/>
 						{/if}
@@ -258,17 +289,18 @@
 					class="close text"
 					onclick={() => {
 						imageBuffer = null;
-					}}>X</button
+					}}><Delete /></button
 				>
 			</div>
 		{:else}
 			<img
+				alt=""
 				onclick={() => (show = !show)}
-				style="grid-row: 2; grid-column: 1; justify-self: start;align-self: start; cursor: pointer;"
+				class="imagearea"
 				src="https://dreibart.de/rpgdb/imagenote.php?notiz={note.id}&state={imageState}"
 			/>
 
-			<div style="grid-column: 2; grid-row: 2;">
+			<div class="main">
 				{@html DOMPurify.sanitize(
 					marked(
 						highlight(currentNoteText, '<span class="highlight">', '</span>', textIndexes ?? [])
@@ -282,20 +314,63 @@
 <style lang="scss">
 	article {
 		&.agreement {
-			border:3px solid  var(--pico-primary);
+			border: 3px solid var(--pico-primary);
 		}
 		&.agreementRequest {
-			border:3px solid  var(--pico-secondary);
+			border: 3px solid var(--pico-secondary);
 		}
 		display: grid;
 		gap: var(--pico-spacing);
 		grid-template-columns: auto 1fr auto;
 		grid-template-rows: auto 1fr auto;
+		grid-template-areas:
+			'header header header'
+			'image main edit'
+			'footer footer footer';
+
+		@media (max-width: 470px) {
+			grid-template-columns: 1fr 1fr;
+			grid-template-rows: repeat(4, auto);
+			grid-template-areas:
+				'header header'
+				'image  edit'
+				'main main'
+				'footer footer';
+		}
+		> * {
+			min-width: 0;
+		}
+
+		:global(pre) {
+			overflow-x: visible;
+		}
+
+		.editcontrols {
+			grid-area: edit;
+			justify-self: end;
+			align-self: start;
+			display: flex;
+			gap: 2rem;
+			flex-direction: column;
+		}
+		.imagearea {
+			grid-area: image;
+			justify-self: start;
+			align-self: start;
+			cursor: pointer;
+		}
+		.footer {
+			grid-area: footer;
+		}
+		.main {
+			grid-area: main;
+		}
+
+		header {
+			grid-area: header;
+		}
 	}
-	header {
-		grid-row: 1;
-		grid-column: span 3;
-	}
+
 	img {
 		max-height: 5rem;
 		object-fit: cover;
