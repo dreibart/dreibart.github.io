@@ -168,7 +168,7 @@
 			{#if note.agreement}
 				{#if 'confirmation' in note.agreement && note.agreement.confirmation}
 					<span style="color:var(--pico-primary)"
-						>Vertrag angenomen von {note.agreement.gamemaster} am {note.agreement.confirmation.toLocaleString()} (angefragt am {note.agreement.request.toLocaleString()})</span
+						>Vertrag angenommen von {note.agreement.gamemaster} am {note.agreement.confirmation.toLocaleString()} (angefragt am {note.agreement.request.toLocaleString()})</span
 					>
 				{:else}
 					<span style="color:var(--pico-secondary)"
