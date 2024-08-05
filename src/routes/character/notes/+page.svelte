@@ -18,6 +18,7 @@
 	import { base64, base64url } from 'rfc4648';
 	import Filter from '$lib/icons/filter.svelte';
 	import Add from '$lib/icons/add.svelte';
+	import { base } from '$app/paths';
 	// import { crossfade, fade } from 'svelte/transition';
 	// import { quintOut } from 'svelte/easing';
 	// import { flip } from 'svelte/animate';
@@ -194,7 +195,7 @@
 </script>
 
 {#if errorMessage}
-	<dialog open><p>{errorMessage}</p></dialog>
+	<dialog open><p>{errorMessage}</p><a href="{base}">Zurück zur Characterauswahl</a></dialog>
 {/if}
 
 {#if characterId}

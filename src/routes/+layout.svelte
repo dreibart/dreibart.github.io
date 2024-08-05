@@ -239,7 +239,7 @@
 				{#if browser}
 					<details class="dropdown">
 						<summary>Angemeldet als {currentUser()}</summary>
-						<ul style="bottom:0; left:unset;right:50vw;width:min-content;height: fit-content;">
+						<ul style="bottom:45px; margin:0; left:unset;right:0;width:min-content;height: fit-content;">
 							<li>
 								<button onclick={()=>changeUser()}>Nutzer Wechseln (Neu)</button>
 							</li>
@@ -326,6 +326,7 @@
 			padding: calc(var(--modifier)) calc(var(--modifier));
 			border: 1px solid var(--pico-primary);
 			backdrop-filter: var(--backdrop);
+			z-index: 1000;
 		}
 		display: block;
 
@@ -361,6 +362,7 @@
 		border-top: 1px var(--pico-primary) solid;
 	}
 	nav.bar {
+		z-index: 1001;
 		overflow: hidden;
 		height: var(--app-bar-height);
 		position: fixed;
