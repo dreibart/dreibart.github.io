@@ -417,6 +417,7 @@
 			& > button {
 				border-radius: 0;
 				background-color: transparent;
+				color: var(--pico-muted-color);
 				margin: 0;
 				border-bottom: none;
 				border-left: none;
