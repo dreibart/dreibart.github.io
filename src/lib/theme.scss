@@ -4,6 +4,35 @@
 
 @use "@picocss/pico/scss/colors/utilities";
 
+@import "@picocss/pico/scss/colors";
+
+
+
+// Light color scheme (Default)
+// Can be forced with data-theme="light"
+[data-theme="light"],
+:root:not([data-theme="dark"]) {
+    --text-color: #{$zinc-750};
+    ;
+}
+
+// Dark color scheme (Auto)
+// Automatically enabled if user has Dark mode enabled
+@media only screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --text-color: #{$zinc-200};
+        ;
+    }
+}
+
+// Dark color scheme (Forced)
+// Enabled if forced with data-theme="dark"
+[data-theme="dark"] {
+    --text-color: #{$zinc-200};
+    ;
+}
+
+
 a[aria-disabled=true] {
     color: var(--pico-muted-color);
 
@@ -101,7 +130,7 @@ button.link {
 }
 
 
-svg.icon{
+svg.icon {
     transition: all 0.5s;
     fill: transparent;
 }
