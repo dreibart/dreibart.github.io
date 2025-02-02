@@ -1051,6 +1051,7 @@ let blockingPromisde: {
     promise: Promise<void>
 };
 
+
 function initBlockingPromise() {
     let set: () => void = undefined!;
     const p = new Promise<void>((resolve) => {
@@ -1148,7 +1149,7 @@ export async function requestFromBackend<TPath extends Pathes, TMethod extends M
     request = "https://dreibart.de/rpgdb/restAPI.php" + request;
 
 
-    let token = window.localStorage.getItem('token');
+    let token = (await tokenPromise) ?? window.localStorage.getItem('token');
     if (token == null) {
         // todo : get token
         // eslint-disable-next-line no-async-promise-executor
